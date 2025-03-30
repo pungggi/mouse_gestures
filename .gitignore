@@ -1,0 +1,23 @@
+# Node.js dependencies
+node_modules/
+
+# VS Code extension output directory
+dist/
+
+# Local development files
+.vscode/
+.github/
+*.vsix
+
+# Logs and temporary files
+*.log
+*.tmp
+examples/
+
+# Environment-specific files
+.env
+.env.local
+
+# OS-specific files
+.DS_Store
+Thumbs.db

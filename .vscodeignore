@@ -1,0 +1,18 @@
+.vscode/**
+.vscode/** */
+.vscode-test/**
+.gitignore
+test/**
+node_modules/**
+scripts/**
+src/**
+webpack.*.js
+*.vsix
+.github/**
+docs/**
+media/**/*.psd
+media/**/*.ai
+**/*.map
+**/*.ts
+!dist/**
+eslint.config.mjs

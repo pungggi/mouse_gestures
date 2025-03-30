@@ -1,0 +1,22 @@
+{
+  "name": "",
+  "displayName": "",
+  "description": "",
+  "version": "0.0.1",
+  "publisher": "ngSoftware",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./src/extension.js",
+  "contributes": {
+    "configuration": {}
+  },
+  "devDependencies": {
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
+  }
+}
