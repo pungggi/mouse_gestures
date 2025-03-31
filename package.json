@@ -1,8 +1,9 @@
 {
-  "name": "",
-  "displayName": "",
-  "description": "",
-  "version": "0.0.1",
+  "name": "mouse-gestures",
+  "displayName": "Mouse Gestures",
+  "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
+  "version": "0.0.4",
+  "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
     "vscode": "^1.80.0"
@@ -13,9 +14,43 @@
   "activationEvents": [],
   "main": "./src/extension.js",
   "contributes": {
-    "configuration": {}
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gesturePadContainer",
+          "title": "Gesture Pad",
+          "icon": "media/mouse.svg"
+        }
+      ]
+    },
+    "views": {
+      "gesturePadContainer": [
+        {
+          "id": "gesturePadView",
+          "name": "Gesture Pad",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [],
+    "configuration": {
+      "title": "Mouse Gestures",
+      "properties": {
+        "mouseGestures.triggerButton": {
+          "type": "string",
+          "enum": [
+            "right",
+            "left"
+          ],
+          "default": "right",
+          "description": "Select which mouse button initiates the drag gesture in the Gesture Pad."
+        }
+      }
+    }
   },
   "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "globals": "^16.0.0",
     "webpack": "^5.98.0",
     "webpack-cli": "^6.0.1"
   }
