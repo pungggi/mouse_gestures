@@ -1,6 +1,5 @@
 # Node.js dependencies
 node_modules/
-memory-bank/
 
 # VS Code extension output directory
 dist/
@@ -13,12 +12,11 @@ dist/
 # Logs and temporary files
 *.log
 *.tmp
-examples/
 
 # Environment-specific files
 .env
 .env.local
-.roomodes
+
 
 # OS-specific files
 .DS_Store

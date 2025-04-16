@@ -16,3 +16,6 @@ media/**/*.ai
 **/*.ts
 !dist/**
 eslint.config.mjs
+.roomodes
+memory-bank/
+examples/
