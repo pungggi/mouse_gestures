@@ -35,104 +35,246 @@ class GesturePadViewProvider {
   }
 
   resolveWebviewView(webviewView) {
-    // Renamed context parameter to avoid confusion
     this._view = webviewView;
 
+    // Setup configuration watcher if not already setup
+    if (!this._configWatcher) {
+      this._configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
+        if (e.affectsConfiguration("mouseGestures")) {
+          this._updateConfigCache();
+          if (this._view) {
+            this._sendConfig(this._view.webview);
+          }
+        }
+      });
+      this._subscriptions.push(this._configWatcher);
+    }
+
+    // Configure webview options
     webviewView.webview.options = {
-      // Allow scripts in the webview
       enableScripts: true,
-      // Restrict the webview to only loading content from the 'webview' directory
       localResourceRoots: [vscode.Uri.joinPath(this._extensionUri, "webview")],
     };
 
-    // Get path to script on disk
-    const scriptPathOnDisk = vscode.Uri.joinPath(
-      this._extensionUri,
-      "webview",
-      "gesturePad.js"
+    // Initialize webview content
+    const scriptUri = webviewView.webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "webview", "gesturePad.js")
     );
-    // And get the special URI to use with the webview
-    const scriptUri = webviewView.webview.asWebviewUri(scriptPathOnDisk);
-
-    // Set the HTML content
     webviewView.webview.html = this._getHtmlForWebview(scriptUri);
 
-    // Send initial configuration to the webview
+    // Initialize configuration
+    this._updateConfigCache();
     this._sendConfig(webviewView.webview);
 
-    // Listen for configuration changes and send updates
-    // Use the stored subscriptions array from the main context
+    // Setup message handling with performance optimization
+    const messageHandler = (message) => {
+      if (message.command === "gestureDetected") {
+        this._handleGesture(message.details);
+      }
+    };
+
+    // Event listeners with proper cleanup
     this._subscriptions.push(
-      vscode.workspace.onDidChangeConfiguration((e) => {
-        if (
-          e.affectsConfiguration("mouseGestures.triggerButton") &&
-          this._view
-        ) {
-          console.log("Configuration changed, sending update to webview.");
-          this._sendConfig(this._view.webview);
-        }
+      webviewView.webview.onDidReceiveMessage(messageHandler),
+      webviewView.onDidDispose(() => {
+        this._view = undefined;
+        // Clear config cache on dispose
+        this._configCache = null;
       })
     );
+  }
 
-    // Handle messages from the webview
-    webviewView.webview.onDidReceiveMessage(
-      (message) => {
-        console.log("Received message from webview:", message);
-        switch (message.command) {
-          case "gestureDetected":
-            this._handleGesture(message.details); // Use class method
-            return;
-          // Add other cases as needed
-        }
+  // Default configuration values
+  static DEFAULT_CONFIG = {
+    minDirectionChange: 30,
+    minVelocity: 0.2,
+    enablePatternMatching: false,
+    gestureDebounceTime: 500,
+  };
+
+  // Cached configuration
+  _configCache = null;
+  _configWatcher = null;
+
+  // Method to get gesture commands with caching
+  _getGestureCommands() {
+    if (!this._configCache) {
+      this._updateConfigCache();
+    }
+    return this._configCache.gestureCommands;
+  }
+
+  // Method to update configuration cache
+  _updateConfigCache() {
+    const config = vscode.workspace.getConfiguration("mouseGestures");
+    this._configCache = {
+      gestureCommands: config.get("gestureCommands") || [],
+      thresholds: {
+        minDirectionChange:
+          config.get("minDirectionChange") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.minDirectionChange,
+        minVelocity:
+          config.get("minVelocity") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.minVelocity,
+        enablePatternMatching:
+          config.get("enablePatternMatching") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.enablePatternMatching,
+        gestureDebounceTime:
+          config.get("gestureDebounceTime") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.gestureDebounceTime,
       },
-      undefined,
-      this._subscriptions // Use stored subscriptions
-    );
-
-    webviewView.onDidDispose(
-      () => {
-        console.log("Gesture Pad view disposed.");
-        this._view = undefined;
-      },
-      null,
-      this._subscriptions // Use stored subscriptions
-    );
-
-    console.log("Gesture Pad view resolved.");
+    };
   }
 
   // Method to send configuration to the webview
   _sendConfig(webview) {
-    const config = vscode.workspace.getConfiguration("mouseGestures");
-    const triggerButton = config.get("triggerButton", "right"); // Default to 'right' if not found
-    webview.postMessage({ command: "setConfig", config: { triggerButton } });
-    console.log(`Sent config to webview: triggerButton=${triggerButton}`);
-  }
-
-  // Method to handle gestures within the provider
-  _handleGesture(details) {
-    console.log("Handling gesture:", details);
-    const direction = details?.direction;
-    if (!direction) return;
-
-    let commandToExecute = "";
-    switch (direction) {
-      case "right":
-        commandToExecute = "workbench.action.nextEditor";
-        break;
-      case "left":
-        commandToExecute = "workbench.action.previousEditor";
-        break;
-      // Add cases for 'up', 'down', etc.
-      // case 'up': commandToExecute = 'workbench.action.scrollUp'; break;
-      // case 'down': commandToExecute = 'workbench.action.scrollDown'; break;
-      default:
-        console.log(`No command mapped for gesture direction: ${direction}`);
-        return;
+    if (!this._configCache) {
+      this._updateConfigCache();
     }
 
-    if (commandToExecute) {
-      vscode.commands.executeCommand(commandToExecute);
+    webview.postMessage({
+      command: "updateConfig",
+      gestureCommands: this._configCache.gestureCommands,
+      thresholds: this._configCache.thresholds,
+    });
+  }
+
+  // Method to execute a single command
+  async _executeCommand(action) {
+    try {
+      const result = await vscode.commands.executeCommand(
+        action.command,
+        ...(action.args || [])
+      );
+      return { success: true, result };
+    } catch (error) {
+      console.error(`Error executing command ${action.command}:`, error);
+      return { success: false, error };
+    }
+  }
+
+  // Optimized command execution strategy
+  async _executeCommands(match) {
+    if (match.executionMode === "parallel") {
+      const results = await Promise.allSettled(
+        match.actions.map((action) => this._executeCommand(action))
+      );
+
+      // Handle failures in parallel execution
+      const failures = results
+        .filter((r) => r.status === "rejected")
+        .map((r) => r.reason);
+
+      if (failures.length > 0) {
+        console.warn("Some parallel commands failed:", failures);
+      }
+    } else {
+      for (const action of match.actions) {
+        try {
+          const { success } = await this._executeCommand(action);
+          if (action.waitForCompletion && !success) {
+            break;
+          }
+        } catch (error) {
+          console.error(`Command execution failed:`, error);
+          if (action.waitForCompletion) break;
+        }
+      }
+    }
+  }
+
+  // Helper method to find gesture matches with optimized matching strategy
+  _findGestureMatch(gesture, commands, enablePatternMatching) {
+    // Try exact match first (most common case)
+    const exactMatch = commands.find((gc) => gc.gesture === gesture);
+    if (exactMatch) return exactMatch;
+
+    // Try prefix match
+    const prefixMatch = commands.find(
+      (gc) => gc.matchType === "prefix" && gesture.startsWith(gc.gesture)
+    );
+    if (prefixMatch) return prefixMatch;
+
+    // Try pattern match last (most expensive)
+    if (enablePatternMatching) {
+      return this._findPatternMatch(gesture, commands);
+    }
+
+    return null;
+  }
+
+  // Optimized pattern matching with caching
+  _findPatternMatch(gesture, gestureCommands) {
+    const patternCommands = gestureCommands.filter(
+      (gc) => gc.matchType === "pattern"
+    );
+
+    for (const command of patternCommands) {
+      let regex = this._patternCache.get(command.gesture);
+
+      if (!regex) {
+        const pattern = command.gesture.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        regex = new RegExp(pattern);
+        this._patternCache.set(command.gesture, regex);
+      }
+
+      if (regex.test(gesture)) {
+        return command;
+      }
+    }
+    return null;
+  }
+
+  // Cached gesture map for faster lookups
+  static GESTURE_MAP = {
+    right: "R",
+    left: "L",
+    up: "U",
+    down: "D",
+    upright: "UR",
+    upleft: "UL",
+    downright: "DR",
+    downleft: "DL",
+  };
+
+  // Cache for compiled regex patterns
+  _patternCache = new Map();
+
+  // Method to handle gestures within the provider
+  async _handleGesture(details) {
+    try {
+      const direction = details?.sequence;
+      if (!direction) return;
+
+      const gesture = GesturePadViewProvider.GESTURE_MAP[direction];
+      if (!gesture) {
+        console.log(`Unknown gesture direction: ${direction}`);
+        return;
+      }
+
+      const gestureCommands = this._getGestureCommands();
+      const config = vscode.workspace.getConfiguration("mouseGestures");
+      const enablePatternMatching = config.get("enablePatternMatching");
+
+      // Optimized matching strategy using find with early returns
+      const match = this._findGestureMatch(
+        gesture,
+        gestureCommands,
+        enablePatternMatching
+      );
+
+      if (!match) {
+        console.log(`No commands mapped for gesture: ${gesture}`);
+        return;
+      }
+
+      // Optimized command execution with proper error handling
+      await this._executeCommands(match);
+    } catch (error) {
+      console.error("Error handling gesture:", error);
+      vscode.window.showErrorMessage(
+        `Error processing gesture: ${error.message}`
+      );
     }
   }
 

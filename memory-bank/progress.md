@@ -23,7 +23,10 @@
 
 ## What's Left to Build / Next Steps (Webview Approach)
 
-1.  **Testing:** User to restart debugger, check custom mouse icon in Activity Bar and Extensions view, open view, test gestures with default (right) button, change setting, test with other button. Verify path drawing/clearing and action execution.
+1.  **FIXED (April 16, 2025):** The Extension-Webview Mismatch bug has been resolved by modifying `src/extension.js` to correctly use `details.sequence` instead of `details.direction`.
+
+    **Testing:** User to restart debugger, check custom mouse icon in Activity Bar and Extensions view, open view, test gestures with default (right) button, change setting, test with other button. Verify path drawing/clearing and action execution.
+
 2.  **Feedback & Iteration:** Address bugs or adjustments based on testing.
 3.  **(Future):** Map 'up'/'down' gestures to commands.
 4.  **(Future):** Refine gesture detection logic if needed.
@@ -55,3 +58,62 @@
 - **2025-03-31:** Updated `package.json` to use `media/mouse.svg` for the Activity Bar view container icon.
 - **2025-03-31:** **FIX:** Re-added `activationEvents` (`onView:gesturePadView`) to `package.json` as required by `vsce` publish tool.
 - **2025-03-31:** Set main extension `icon` to `media/icon.png` (user preference). Set `main` to `src/extension.js` (no build step). Set `activationEvents` to `[]` (user preference). Ready for testing.
+
+---
+
+**Feature: Enhanced Gesture Matching**
+
+- **Date:** 2025-04-16
+- **Status:** Implemented
+- **Description:** Enhanced the gesture matching logic in the `_handleGesture` method of `src/extension.js` to support:
+  - Exact matching (primary approach)
+  - Prefix matching (finds commands where gesture.startsWith(gc.gesture) is true)
+  - Pattern matching (when enablePatternMatching is true)
+- **Implementation Details:**
+  - Added \_findPatternMatch method for pattern-based matching
+  - Improved error handling with try/catch blocks
+  - Enhanced logging for better debugging
+  - Structured gesture matching in a clear three-step process
+- **Files Modified:** `src/extension.js`
+- **Impact:** Enables more flexible and intuitive gesture command matching, improving user experience by allowing partial and pattern-based matches.
+
+---
+
+**Feature: Gesture-to-Command Mapping**
+
+- **Status:** Implemented
+- **Description:** Added a configuration setting (`mouseGestures.gestureCommands`) allowing users to map specific mouse gestures (e.g., "R", "UD") to one or more VS Code commands. Supports sequential/parallel execution, arguments, and wait conditions.
+- **Files Modified:** `package.json`, `src/extension.js`, `README.md`
+- **Clarification:** Configuration supports complex gesture strings (e.g., "LRUDLR"), but recognition depends on the `webview/gesturePad.js` component's capabilities. Enhancing recognition requires updating `webview/gesturePad.js`.
+
+---
+
+**Feature: Complex Gesture Recognition**
+
+- **Date:** 2025-04-16
+- **Status:** Implemented
+- **Description:** Enhanced gesture recognition in `webview/gesturePad.js` to support complex, multi-step gestures (e.g., "LRUDLR"). Implementation includes:
+  - Movement sequence tracking
+  - Improved detection algorithms
+  - Noise filtering
+  - Full gesture sequence reporting to extension
+- **Files Modified:** `webview/gesturePad.js`
+- **Impact:** Enables full support for complex gesture patterns defined in `mouseGestures.gestureCommands`, allowing users to execute sophisticated command sequences through multi-directional gestures.
+
+---
+
+**Feature: Core Gesture Recognition Optimization**
+
+- **Date:** 2025-04-16 22:22
+- **Status:** Implemented
+- **Description:** Performed comprehensive optimization of the core gesture recognition algorithm including:
+  - Configuration and regex pattern caching
+  - Optimized gesture matching algorithms
+  - Refined event handling system
+  - Improved error recovery mechanisms
+  - Enhanced resource management
+  - Restructured code for better readability and maintainability
+- **Files Modified:** `src/extension.js`, `webview/gesturePad.js`
+- **Impact:** Improved performance, reliability, and maintainability of the gesture recognition system while reducing resource usage and enhancing error handling capabilities.
+
+---

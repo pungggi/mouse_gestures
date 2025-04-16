@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
@@ -28,7 +28,8 @@
         {
           "id": "gesturePadView",
           "name": "Gesture Pad",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/mouse.svg"
         }
       ]
     },
@@ -36,22 +37,110 @@
     "configuration": {
       "title": "Mouse Gestures",
       "properties": {
-        "mouseGestures.triggerButton": {
-          "type": "string",
-          "enum": [
-            "right",
-            "left"
+        "mouseGestures.minDirectionChange": {
+          "type": "number",
+          "default": 30,
+          "description": "Minimum distance (in pixels) to register a direction change"
+        },
+        "mouseGestures.minVelocity": {
+          "type": "number",
+          "default": 0.2,
+          "description": "Minimum velocity (pixels/ms) for direction change"
+        },
+        "mouseGestures.enablePatternMatching": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable pattern matching for gestures"
+        },
+        "mouseGestures.gestureDebounceTime": {
+          "type": "number",
+          "default": 500,
+          "description": "Minimum time (in ms) between gesture triggers"
+        },
+        "mouseGestures.gestureCommands": {
+          "type": "array",
+          "default": [
+            {
+              "gesture": "R",
+              "actions": [
+                {
+                  "command": "workbench.action.nextEditor",
+                  "description": "Switch to next editor"
+                }
+              ]
+            },
+            {
+              "gesture": "L",
+              "actions": [
+                {
+                  "command": "workbench.action.previousEditor",
+                  "description": "Switch to previous editor"
+                }
+              ]
+            }
           ],
-          "default": "right",
-          "description": "Select which mouse button initiates the drag gesture in the Gesture Pad."
+          "items": {
+            "type": "object",
+            "required": [
+              "gesture",
+              "actions"
+            ],
+            "properties": {
+              "gesture": {
+                "type": "string",
+                "description": "The gesture string (e.g., 'R' for right, 'L' for left, 'U' for up, 'D' for down, or combinations like 'DR' for down-right)"
+              },
+              "executionMode": {
+                "type": "string",
+                "enum": [
+                  "sequential",
+                  "parallel"
+                ],
+                "default": "sequential",
+                "description": "Whether to execute commands sequentially or in parallel"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "command"
+                  ],
+                  "properties": {
+                    "command": {
+                      "type": "string",
+                      "description": "The VS Code command ID to execute"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Optional description of what this command does"
+                    },
+                    "waitForCompletion": {
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Whether to wait for this command to complete before executing the next one"
+                    },
+                    "args": {
+                      "type": "array",
+                      "description": "Optional arguments to pass to the command",
+                      "items": {
+                        "type": "any"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Maps mouse gestures to VS Code commands. Each entry maps a gesture to one or more commands to execute."
         }
       }
     }
   },
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
+    "@eslint/js": "^9.24.0",
     "globals": "^16.0.0",
-    "webpack": "^5.98.0",
+    "webpack": "^5.99.5",
     "webpack-cli": "^6.0.1"
   }
 }

@@ -21,7 +21,7 @@ This document details the technologies, APIs, setup, and constraints relevant to
   - `resolveWebviewView(webviewView, context, token)`: Method called by VS Code to render the view's content. Provides the `webviewView` object.
   - `webviewView.webview`: Accessor for the webview instance associated with the view. Used to set options (`webviewView.webview.options`), HTML (`webviewView.webview.html`), listen for messages (`webviewView.webview.onDidReceiveMessage`), and send messages (`webviewView.webview.postMessage`).
   - `webviewView.webview.asWebviewUri`: Method to generate correct URIs for loading local resources into the webview.
-  - `vscode.workspace.getConfiguration`: Used to read extension settings (like `mouseGestures.triggerButton`).
+  - `vscode.workspace.getConfiguration`: Used to read extension settings.
   - `vscode.workspace.onDidChangeConfiguration`: Used to listen for changes to settings.
   - `vscode.commands.executeCommand`: Used by the provider to trigger VS Code actions based on messages received from the webview.
   - `context.subscriptions.push()`: Standard way to register disposables (like the view provider registration, configuration listener).
@@ -43,7 +43,7 @@ This document details the technologies, APIs, setup, and constraints relevant to
 - **Isolation:** The webview runs in a separate process and cannot directly access VS Code APIs or the editor state. Communication relies solely on message passing.
 - **User Experience:** The primary challenge is making the interaction feel intuitive, given that gestures must occur in a separate sidebar view.
 - **Panel Management:** Managed by VS Code via the `WebviewViewProvider` and the view contribution in `package.json`. The view appears in the specified Activity Bar container (`$(mouse)` icon). Activation is handled by `onView:gesturePadView`.
-- **Configurability:** Trigger button is configurable via `mouseGestures.triggerButton` setting. Requires message passing to inform the webview.
+- **Mouse Input:** Mouse gestures can be initiated using either the left or right mouse button. This flexibility allows users to choose their preferred mouse button for gesture input.
 - **Security:** Webview content must be carefully constructed to avoid security vulnerabilities (e.g., use nonces, restrict resource loading via `localResourceRoots` and CSP).
 - **Performance:** Keep webview JavaScript (`webview/gesturePad.js`) efficient, especially event handling and canvas drawing.
 
