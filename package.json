@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
@@ -49,8 +49,8 @@
         },
         "mouseGestures.enablePatternMatching": {
           "type": "boolean",
-          "default": false,
-          "description": "Enable pattern matching for gestures"
+          "default": true,
+          "description": "Enable pattern matching for gestures. When enabled, gestures can be defined as regular expressions for complex patterns (e.g., 'L(RU)+D')."
         },
         "mouseGestures.gestureDebounceTime": {
           "type": "number",
@@ -77,6 +77,16 @@
                   "description": "Switch to previous editor"
                 }
               ]
+            },
+            {
+              "gesture": "^LRUDLR$",
+              "matchType": "pattern",
+              "actions": [
+                {
+                  "command": "workbench.action.toggleSidebarVisibility",
+                  "description": "Toggle sidebar for complex gesture LRUDLR"
+                }
+              ]
             }
           ],
           "items": {
@@ -88,7 +98,7 @@
             "properties": {
               "gesture": {
                 "type": "string",
-                "description": "The gesture string (e.g., 'R' for right, 'L' for left, 'U' for up, 'D' for down, or combinations like 'DR' for down-right)"
+                "description": "The gesture string. Supports regular expressions for complex patterns (e.g., 'LRUDLR', '^L(RU)+D$'). For simple gestures, use 'R' (right), 'L' (left), 'U' (up), 'D' (down), or combinations like 'DR' (down-right). For advanced use, define a regex pattern to match complex gesture sequences."
               },
               "executionMode": {
                 "type": "string",

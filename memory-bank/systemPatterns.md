@@ -37,7 +37,12 @@ The extension utilizes a two-process architecture inherent to VS Code extensions
 - **Canvas API (within Webview Script):** Uses the HTML `<canvas>` element and its 2D context (`getContext('2d')`) to draw the user's drag path for visual feedback. Path is cleared shortly after gesture recognition. Line width set to 1px.
 - **Message Passing:** Asynchronous communication between the Webview process and the Extension Host process using `vscode.postMessage()` (Webview -> Extension for gestures; Extension -> Webview for config) and `webviewView.webview.onDidReceiveMessage` / `window.addEventListener('message')`.
 - **State Management (within Webview Script):** Simple JavaScript variables within `webview/gesturePad.js` track the dragging state (`isDragging`), coordinates (`startX`, `startY`, `currentX`, `currentY`), and the configured `triggerButtonCode`.
-- **Gesture Recognition (within Webview Script):** Basic calculation of distance and direction based on start/end coordinates of the drag within `webview/gesturePad.js`.
+- **Gesture Recognition (within Webview Script):** Advanced sequence-based gesture recognition in `webview/gesturePad.js` with:
+  - Continuous tracking of movement direction changes during drag
+  - Angle-based direction detection using `Math.atan2`
+  - Configurable thresholds for noise filtering (`minDirectionChange`, `minVelocity`)
+  - Full gesture sequence building (e.g., "LRUDLR")
+  - Debouncing to prevent rapid, unintended triggers
 
 ## Component Relationships
 

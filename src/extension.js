@@ -88,7 +88,7 @@ class GesturePadViewProvider {
   static DEFAULT_CONFIG = {
     minDirectionChange: 30,
     minVelocity: 0.2,
-    enablePatternMatching: false,
+    enablePatternMatching: true,
     gestureDebounceTime: 500,
   };
 
@@ -213,9 +213,17 @@ class GesturePadViewProvider {
       let regex = this._patternCache.get(command.gesture);
 
       if (!regex) {
-        const pattern = command.gesture.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        regex = new RegExp(pattern);
-        this._patternCache.set(command.gesture, regex);
+        try {
+          // Use the gesture string as a regex directly (allowing complex patterns)
+          regex = new RegExp(command.gesture);
+          this._patternCache.set(command.gesture, regex);
+        } catch (e) {
+          console.error(
+            `Invalid regex pattern for gesture: ${command.gesture}`,
+            e
+          );
+          continue;
+        }
       }
 
       if (regex.test(gesture)) {

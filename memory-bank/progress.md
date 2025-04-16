@@ -88,17 +88,36 @@
 
 ---
 
-**Feature: Complex Gesture Recognition**
+**Feature: Complex Gesture Pattern Recognition — Major Milestone**
 
 - **Date:** 2025-04-16
 - **Status:** Implemented
-- **Description:** Enhanced gesture recognition in `webview/gesturePad.js` to support complex, multi-step gestures (e.g., "LRUDLR"). Implementation includes:
-  - Movement sequence tracking
-  - Improved detection algorithms
-  - Noise filtering
-  - Full gesture sequence reporting to extension
-- **Files Modified:** `webview/gesturePad.js`
-- **Impact:** Enables full support for complex gesture patterns defined in `mouseGestures.gestureCommands`, allowing users to execute sophisticated command sequences through multi-directional gestures.
+- **Description:** The extension now fully supports complex, multi-step gesture patterns (e.g., "LRUDLR") for advanced command execution. This enables users to define and trigger sophisticated command sequences using custom gesture strings, greatly expanding the extension's flexibility and power.
+
+- **Technical Approach:**
+
+  - **Sequence Tracking:** The webview script (`webview/gesturePad.js`) tracks the full sequence of directional changes during a mouse drag, building a gesture string (e.g., "LRUDLR").
+  - **Direction Detection:** Uses angle-based detection (via `Math.atan2`) for accurate direction changes, with configurable thresholds for minimum distance and velocity to filter out noise.
+  - **Noise Filtering:** Only significant, intentional direction changes are registered, reducing false positives.
+  - **Message Passing:** The full gesture sequence is sent from the webview to the extension host using `vscode.postMessage`.
+  - **Flexible Matching:** The extension (`src/extension.js`) supports exact, prefix, and pattern-based matching (when enabled) to map gesture sequences to commands.
+  - **Configuration:** Users can define complex gesture-to-command mappings in the `mouseGestures.gestureCommands` setting, and adjust thresholds for gesture recognition.
+
+- **Design Decisions:**
+
+  - Adopted a sequence-based approach to allow for arbitrary, user-defined gesture patterns.
+  - Made thresholds and matching strategies configurable to accommodate different user preferences and hardware.
+  - Prioritized reliability and extensibility by optimizing the gesture recognition pipeline and error handling.
+
+- **How Users Can Utilize This Functionality:**
+
+  1. Open VS Code settings and configure `mouseGestures.gestureCommands` to map custom gesture strings (e.g., "LRUDLR") to one or more commands.
+  2. Optionally adjust gesture recognition thresholds (`minDirectionChange`, `minVelocity`) and enable pattern matching for more flexible gesture mapping.
+  3. Use the Gesture Pad view to perform complex gestures; the extension will recognize the full sequence and execute the mapped commands.
+  4. Visual feedback and error handling improvements make it easier to experiment with and refine custom gestures.
+
+- **Files Modified:** `webview/gesturePad.js`, `src/extension.js`, `package.json`
+- **Impact:** Empowers users to create and use advanced, multi-directional gesture patterns for highly customizable workflows in VS Code.
 
 ---
 

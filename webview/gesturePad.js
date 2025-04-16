@@ -11,6 +11,11 @@ let startX = 0;
 let startY = 0;
 let currentX = 0;
 let currentY = 0;
+/**
+ * Tracks the last detected direction and the full gesture sequence.
+ * The gestureSequence variable accumulates all direction changes (e.g., "LRUDLR"),
+ * supporting complex gesture patterns for advanced matching.
+ */
 let lastDirection = null;
 let gestureSequence = "";
 let lastX = 0;
