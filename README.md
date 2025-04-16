@@ -92,6 +92,33 @@ This extension contributes the following settings:
   - `waitForCompletion`: Whether to wait for the command to complete before executing the next one (only applies in sequential mode)
   - `args`: Optional array of arguments to pass to the command
 
+### Technical Implementation Details
+
+The extension implements a sophisticated gesture recognition system with the following features:
+
+- **Three-Step Gesture Matching:**
+
+  1. Exact match verification
+  2. Prefix match detection
+  3. Pattern-based matching (when enabled)
+
+- **Enhanced Direction Detection:**
+
+  - Support for 8 directions including diagonals (R, L, U, D, UR, UL, DR, DL)
+  - Angle-based calculation for accurate direction detection
+  - Configurable direction change thresholds
+
+- **Performance Optimizations:**
+
+  - Gesture debouncing to prevent unintended triggers
+  - Minimum distance and velocity thresholds
+  - Configurable gesture trigger timing
+
+- **Robust Error Handling:**
+  - Comprehensive error catching and logging
+  - Graceful fallback for legacy gesture formats
+  - Clear error messaging for debugging
+
 ### Default Gesture Mappings
 
 - `R` (Right): Switch to next editor
