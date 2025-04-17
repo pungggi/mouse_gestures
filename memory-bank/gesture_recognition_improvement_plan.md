@@ -1,6 +1,6 @@
 # Comprehensive Improvement Plan for Complex Gesture Recognition
 
-## Implementation Status (April 16, 2025)
+## Implementation Status (April 17, 2025)
 
 The complex gesture recognition feature has been successfully implemented, with several key improvements completed:
 
@@ -14,13 +14,17 @@ The complex gesture recognition feature has been successfully implemented, with 
 
 ✅ **Sequence Tracking**: Implemented full gesture sequence tracking with noise filtering.
 
+✅ **Customization Options**: Added user-configurable settings for visual appearance and behavior.
+
 The following improvements remain as future enhancements:
 
 ⏳ **Diagonal Direction Support**: Support for diagonal movements (DR, DL, UR, UL).
 
 ⏳ **Visual Feedback**: Enhanced visual feedback during gesture drawing.
 
-⏳ **Gesture Preview and History**: UI for showing recognized gestures and history.
+✅ **Gesture Preview**: UI for showing recognized gestures.
+
+⏳ **Gesture History**: UI for showing gesture history.
 
 This document outlines a comprehensive plan for improving the complex gesture recognition feature in the Mouse Gestures extension. The plan addresses both technical implementation issues and user experience enhancements.
 
@@ -398,7 +402,7 @@ window.addEventListener("mouseup", (e) => {
 });
 ```
 
-### 2.3. Customization Options
+### 2.3. ✅ Customization Options
 
 **Issue:** Limited visual customization.
 

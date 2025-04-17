@@ -26,6 +26,24 @@ let minVelocity = 0.2; // Minimum velocity (pixels/ms) for direction change
 let gestureDebounceTime = 500; // Minimum time between gesture triggers
 let lastGestureTime = 0; // Track last gesture time for debouncing
 
+// No gesture history variables needed for preview-only functionality
+
+// Variables for visual feedback
+let directionMarkers = [];
+const markerColors = {
+  L: "#ff0000", // Red
+  R: "#00ff00", // Green
+  U: "#0000ff", // Blue
+  D: "#ffff00", // Yellow
+};
+const markerSize = 5; // Size of direction change markers in pixels
+
+// Customization options
+let pathColor = "#cccccc";
+let pathThickness = 1;
+let showDirectionMarkers = true;
+let enableGesturePreview = true;
+
 console.log("Gesture Pad script loaded from external file.");
 
 // Resize canvas to fit window
@@ -39,8 +57,8 @@ function resizeCanvas() {
 
 function setupCanvasContext() {
   // --- Drawing Setup ---
-  ctx.strokeStyle = "#cccccc"; // Path color
-  ctx.lineWidth = 1; // Make line thinner
+  ctx.strokeStyle = pathColor;
+  ctx.lineWidth = pathThickness;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 }
@@ -56,6 +74,17 @@ window.addEventListener("message", (event) => {
       minVelocity = message.thresholds.minVelocity;
       //enablePatternMatching = message.thresholds.enablePatternMatching;
       gestureDebounceTime = message.thresholds.gestureDebounceTime;
+    }
+
+    // Update visual settings if provided
+    if (message.visualSettings) {
+      pathColor = message.visualSettings.pathColor;
+      pathThickness = message.visualSettings.pathThickness;
+      showDirectionMarkers = message.visualSettings.showDirectionMarkers;
+      enableGesturePreview = message.visualSettings.showGesturePreview;
+
+      // Apply settings to canvas context
+      setupCanvasContext();
     }
   }
 });
@@ -84,6 +113,9 @@ gestureArea.addEventListener("mousedown", (e) => {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous path
     ctx.beginPath();
     ctx.moveTo(startX, startY);
+
+    // Clear any existing direction markers
+    directionMarkers = [];
 
     // Prevent text selection during drag
     e.preventDefault();
@@ -134,6 +166,14 @@ function detectDirectionChange(newX, newY) {
 
   // Only update tracking variables and return direction if it's different
   if (newDirection !== lastDirection) {
+    // Add a direction marker at the point where direction changes
+    directionMarkers.push({
+      x: newX,
+      y: newY,
+      direction: newDirection,
+      color: markerColors[newDirection] || "#ffffff",
+    });
+
     lastX = newX;
     lastY = newY;
     lastTime = currentTime;
@@ -152,6 +192,18 @@ window.addEventListener("mousemove", (e) => {
     ctx.lineTo(currentX, currentY);
     ctx.stroke();
 
+    // Draw direction markers if enabled
+    if (showDirectionMarkers) {
+      directionMarkers.forEach((marker) => {
+        ctx.save();
+        ctx.fillStyle = marker.color;
+        ctx.beginPath();
+        ctx.arc(marker.x, marker.y, markerSize, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
     // Detect direction changes
     const newDirection = detectDirectionChange(currentX, currentY);
     if (newDirection) {
@@ -166,6 +218,47 @@ window.addEventListener("mousemove", (e) => {
     }
   }
 });
+
+// Function to display the current gesture
+function showGesturePreview(sequence) {
+  // Create or update a preview element
+  let previewElement = document.getElementById("gesture-preview");
+  if (!previewElement) {
+    previewElement = document.createElement("div");
+    previewElement.id = "gesture-preview";
+    previewElement.style.position = "absolute";
+    previewElement.style.bottom = "10px";
+    previewElement.style.left = "10px";
+    previewElement.style.padding = "5px";
+    previewElement.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+    previewElement.style.color = "#ffffff";
+    previewElement.style.borderRadius = "3px";
+    previewElement.style.fontFamily = "monospace";
+    previewElement.style.fontSize = "14px";
+    gestureArea.appendChild(previewElement);
+  }
+
+  previewElement.textContent = `Gesture: ${sequence}`;
+
+  // Show the preview briefly then fade out
+  previewElement.style.opacity = "1";
+  setTimeout(() => {
+    previewElement.style.opacity = "0";
+    previewElement.style.transition = "opacity 1s";
+  }, 2000);
+}
+
+// Function to normalize gesture sequences by removing repeated consecutive directions
+function normalizeGestureSequence(sequence) {
+  // Remove repeated consecutive directions (e.g., "LLLRR" -> "LR")
+  let normalized = "";
+  for (let i = 0; i < sequence.length; i++) {
+    if (i === 0 || sequence[i] !== sequence[i - 1]) {
+      normalized += sequence[i];
+    }
+  }
+  return normalized;
+}
 
 window.addEventListener("mouseup", (e) => {
   // Process mouseup if dragging and it's the same button that started the drag
@@ -188,8 +281,17 @@ window.addEventListener("mouseup", (e) => {
       distance > minDistance &&
       currentTime - lastGestureTime > gestureDebounceTime
     ) {
-      const sequence = gestureSequence || detectInitialDirection(dx, dy);
+      let sequence = gestureSequence || detectInitialDirection(dx, dy);
+
+      // Normalize the sequence by removing repeated consecutive directions
+      sequence = normalizeGestureSequence(sequence);
+
       console.log(`Gesture sequence detected: ${sequence}`);
+
+      // Show gesture preview if enabled
+      if (enableGesturePreview) {
+        showGesturePreview(sequence);
+      }
 
       // Send message back to the extension
       vscode.postMessage({
@@ -213,5 +315,6 @@ window.addEventListener("mouseup", (e) => {
     // Reset gesture tracking
     gestureSequence = "";
     lastDirection = null;
+    directionMarkers = []; // Clear direction markers
   }
 });

@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
@@ -56,6 +56,26 @@
           "type": "number",
           "default": 500,
           "description": "Minimum time (in ms) between gesture triggers"
+        },
+        "mouseGestures.pathColor": {
+          "type": "string",
+          "default": "#cccccc",
+          "description": "Color of the gesture path"
+        },
+        "mouseGestures.pathThickness": {
+          "type": "number",
+          "default": 1,
+          "description": "Thickness of the gesture path in pixels"
+        },
+        "mouseGestures.showDirectionMarkers": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show direction change markers during gesture drawing"
+        },
+        "mouseGestures.showGesturePreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show gesture preview after completion"
         },
         "mouseGestures.gestureCommands": {
           "type": "array",

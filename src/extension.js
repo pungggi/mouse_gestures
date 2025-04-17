@@ -90,6 +90,10 @@ class GesturePadViewProvider {
     minVelocity: 0.2,
     enablePatternMatching: true,
     gestureDebounceTime: 500,
+    pathColor: "#cccccc",
+    pathThickness: 1,
+    showDirectionMarkers: true,
+    showGesturePreview: true,
   };
 
   // Cached configuration
@@ -123,6 +127,16 @@ class GesturePadViewProvider {
           config.get("gestureDebounceTime") ||
           GesturePadViewProvider.DEFAULT_CONFIG.gestureDebounceTime,
       },
+      visualSettings: {
+        pathColor:
+          config.get("pathColor") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.pathColor,
+        pathThickness:
+          config.get("pathThickness") ||
+          GesturePadViewProvider.DEFAULT_CONFIG.pathThickness,
+        showDirectionMarkers: config.get("showDirectionMarkers") !== false,
+        showGesturePreview: config.get("showGesturePreview") !== false,
+      },
     };
   }
 
@@ -136,6 +150,7 @@ class GesturePadViewProvider {
       command: "updateConfig",
       gestureCommands: this._configCache.gestureCommands,
       thresholds: this._configCache.thresholds,
+      visualSettings: this._configCache.visualSettings,
     });
   }
 
