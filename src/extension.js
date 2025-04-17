@@ -254,12 +254,16 @@ class GesturePadViewProvider {
       const direction = details?.sequence;
       if (!direction) return;
 
-      const gesture = GesturePadViewProvider.GESTURE_MAP[direction];
-      if (!gesture) {
+      // Find the gesture name by direction code
+      const gestureEntries = Object.entries(GesturePadViewProvider.GESTURE_MAP);
+      const matchingEntry = gestureEntries.find(([code]) => code === direction);
+
+      if (!matchingEntry) {
         console.log(`Unknown gesture direction: ${direction}`);
         return;
       }
 
+      const gesture = direction; // Use the direction code directly
       const gestureCommands = this._getGestureCommands();
       const config = vscode.workspace.getConfiguration("mouseGestures");
       const enablePatternMatching = config.get("enablePatternMatching");
