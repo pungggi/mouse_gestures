@@ -16,13 +16,13 @@ Mouse gesture support for Visual Studio Code. Execute commands by performing mou
 
 The extension provides a gesture pad view in the activity bar where you can perform mouse gestures. When a gesture is detected, it executes the corresponding command(s) based on your configuration.
 
-1. Click and hold the right mouse button in the gesture pad
+1. Click and hold the right or left mouse button in the gesture pad
 2. Move the mouse to draw your gesture (e.g., move right for "R" gesture, down-right for "DR" gesture)
 3. Release the mouse button to execute the configured command(s)
 
 ## Usage
 
-1. Open the gesture pad view from the activity bar (mouse icon)
+1. Open the gesture pad view from the activity bar (hand/mouse icon)
 2. Configure your desired gesture-to-command mappings in settings
 3. Perform gestures to execute commands
 
