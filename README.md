@@ -10,13 +10,14 @@ Mouse gesture support for Visual Studio Code. Execute commands by performing mou
 - Support for waiting on command completion
 - Built-in gesture pad for gesture detection
 - Support for complex gesture patterns using regular expressions
+- Full 8-direction support including diagonal movements (UR, UL, DR, DL)
 
 ## How It Works
 
 The extension provides a gesture pad view in the activity bar where you can perform mouse gestures. When a gesture is detected, it executes the corresponding command(s) based on your configuration.
 
 1. Click and hold the right mouse button in the gesture pad
-2. Move the mouse to draw your gesture (e.g., move right for "R" gesture)
+2. Move the mouse to draw your gesture (e.g., move right for "R" gesture, down-right for "DR" gesture)
 3. Release the mouse button to execute the configured command(s)
 
 ## Usage
@@ -30,7 +31,7 @@ The extension provides a gesture pad view in the activity bar where you can perf
 - `R` (Right): Switch to next editor
 - `L` (Left): Switch to previous editor
 
-You can override these defaults or add new gestures by configuring `mouseGestures.gestureCommands` in your settings.
+You can override these defaults or add new gestures by configuring `mouseGestures.gestureCommands` in your settings. The extension supports both cardinal directions (R, L, U, D) and diagonal directions (UR, UL, DR, DL), allowing for more precise and versatile gesture patterns.
 
 ## Configuration
 
@@ -179,8 +180,13 @@ Here are some examples of complex gesture patterns:
    - Example matches: LUD, LRUD
 
 5. **Counting Repetitions**: `^L(RU){2,3}D$`
+
    - Matches Left, followed by 2-3 repetitions of Right-Up, ending with Down
    - Example matches: LRURUD, LRURURUD
+
+6. **Z-shaped Gesture**: `^RDLR$`
+   - Creates a Z-shaped pattern: Right, then Down-Left (diagonal), then Right
+   - Visually intuitive for actions like "clear all" or "reset view"
 
 ### Best Practices
 

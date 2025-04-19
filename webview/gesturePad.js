@@ -35,6 +35,10 @@ const markerColors = {
   R: "#00ff00", // Green
   U: "#0000ff", // Blue
   D: "#ffff00", // Yellow
+  UL: "#ff00ff", // Magenta
+  UR: "#00ffff", // Cyan
+  DL: "#ff8000", // Orange
+  DR: "#8000ff", // Purple
 };
 const markerSize = 5; // Size of direction change markers in pixels
 
@@ -126,10 +130,26 @@ gestureArea.addEventListener("mousedown", (e) => {
 // even if the cursor leaves the gesture area during the drag.
 // Helper function to detect initial direction
 function detectInitialDirection(dx, dy) {
-  if (Math.abs(dx) > Math.abs(dy)) {
-    return dx > 0 ? "R" : "L";
+  // Calculate the angle for consistent direction detection
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+  // 8-direction support (including diagonals)
+  if (angle > -22.5 && angle <= 22.5) {
+    return "R";
+  } else if (angle > 22.5 && angle <= 67.5) {
+    return "DR";
+  } else if (angle > 67.5 && angle <= 112.5) {
+    return "D";
+  } else if (angle > 112.5 && angle <= 157.5) {
+    return "DL";
+  } else if (angle > 157.5 || angle <= -157.5) {
+    return "L";
+  } else if (angle > -157.5 && angle <= -112.5) {
+    return "UL";
+  } else if (angle > -112.5 && angle <= -67.5) {
+    return "U";
   } else {
-    return dy > 0 ? "D" : "U";
+    return "UR";
   }
 }
 
@@ -154,14 +174,23 @@ function detectDirectionChange(newX, newY) {
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
   let newDirection;
 
-  if (angle > -45 && angle <= 45) {
+  // 8-direction support (including diagonals)
+  if (angle > -22.5 && angle <= 22.5) {
     newDirection = "R";
-  } else if (angle > 45 && angle <= 135) {
+  } else if (angle > 22.5 && angle <= 67.5) {
+    newDirection = "DR";
+  } else if (angle > 67.5 && angle <= 112.5) {
     newDirection = "D";
-  } else if (angle > 135 || angle <= -135) {
+  } else if (angle > 112.5 && angle <= 157.5) {
+    newDirection = "DL";
+  } else if (angle > 157.5 || angle <= -157.5) {
     newDirection = "L";
-  } else {
+  } else if (angle > -157.5 && angle <= -112.5) {
+    newDirection = "UL";
+  } else if (angle > -112.5 && angle <= -67.5) {
     newDirection = "U";
+  } else {
+    newDirection = "UR";
   }
 
   // Only update tracking variables and return direction if it's different

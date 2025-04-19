@@ -21,8 +21,6 @@
 
 ## What's Left to Build / Next Steps (Webview Approach)
 
-## What's Left to Build / Next Steps (Webview Approach)
-
 1.  **FIXED (April 16, 2025):** The Extension-Webview Mismatch bug has been resolved by modifying `src/extension.js` to correctly use `details.sequence` instead of `details.direction`.
 
     **Testing:** User to restart debugger, check custom mouse icon in Activity Bar and Extensions view, open view, test gestures with default (right) button, change setting, test with other button. Verify path drawing/clearing and action execution.
@@ -118,6 +116,31 @@
 
 - **Files Modified:** `webview/gesturePad.js`, `src/extension.js`, `package.json`
 - **Impact:** Empowers users to create and use advanced, multi-directional gesture patterns for highly customizable workflows in VS Code.
+
+---
+
+**Feature: Diagonal Direction Support**
+
+- **Date:** 2025-04-19
+- **Status:** Implemented
+- **Description:** Added support for diagonal movements (DR, DL, UR, UL) in the gesture recognition system, enhancing the precision and versatility of gesture detection.
+- **Technical Approach:**
+  - Updated the angle-based direction detection in `detectDirectionChange` function to support 8 directions instead of just 4
+  - Modified the `detectInitialDirection` function to use the same angle-based approach for consistent diagonal direction support
+  - Added color definitions for diagonal directions in the `markerColors` object for visual feedback
+- **Implementation Details:**
+  - Used angle ranges to accurately detect diagonal movements:
+    - R: -22.5° to 22.5°
+    - DR: 22.5° to 67.5°
+    - D: 67.5° to 112.5°
+    - DL: 112.5° to 157.5°
+    - L: 157.5° to -157.5°
+    - UL: -157.5° to -112.5°
+    - U: -112.5° to -67.5°
+    - UR: -67.5° to -22.5°
+  - Ensured consistent direction detection between initial and ongoing gesture movements
+- **Files Modified:** `webview/gesturePad.js`
+- **Impact:** Users can now perform more precise and complex gestures using diagonal movements, significantly expanding the range of possible gesture patterns and improving the overall user experience.
 
 ---
 
