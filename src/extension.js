@@ -312,7 +312,7 @@ class GesturePadViewProvider {
     // Use a nonce to only allow specific scripts to be run
     const nonce = getNonce();
 
-    return `<!DOCTYPE html>
+    return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -322,7 +322,6 @@ class GesturePadViewProvider {
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gesture Pad</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #252526; cursor: crosshair; }
         #gesture-area { position: relative; width: 100%; height: 100%; } /* Container for positioning canvas */
@@ -352,7 +351,6 @@ function getNonce() {
 }
 
 function deactivate() {
-  // Deactivation function
   console.log("Mouse Gesture extension deactivated.");
 }
 
