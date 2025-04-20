@@ -195,35 +195,25 @@ function showGesturePreview(gestureInfo) {
   // Clear previous content
   previewElement.innerHTML = "";
 
-  // Add gesture sequence
-  const gestureHeader = document.createElement("div");
-  gestureHeader.textContent = `Gesture: ${gestureInfo.gesture}`;
-  gestureHeader.style.fontWeight = "bold";
-  gestureHeader.style.marginBottom = "5px";
-  previewElement.appendChild(gestureHeader);
+  // Format descriptions with curly braces
+  const formattedDescriptions = gestureInfo.descriptions
+    .map((item) => `{${item.description}}`)
+    .join(" "); // Join with spaces
 
-  // If we have descriptions, add them
-  if (gestureInfo.descriptions.length > 0) {
-    const actionsList = document.createElement("div");
+  // Combine sequence and descriptions
+  const displayText =
+    gestureInfo.descriptions.length > 0
+      ? `${gestureInfo.gesture} ${formattedDescriptions}`
+      : gestureInfo.gesture;
 
-    gestureInfo.descriptions.forEach((item, index) => {
-      const actionItem = document.createElement("div");
-      actionItem.style.marginLeft = "10px";
-      actionItem.style.marginBottom = "3px";
-      actionItem.textContent = `${index + 1}. ${item.description} (${
-        item.command
-      })`;
-      actionsList.appendChild(actionItem);
-    });
+  // Debug log to verify the display text
+  console.log("Gesture display text:", displayText);
+  console.log("Gesture info:", gestureInfo);
 
-    previewElement.appendChild(actionsList);
-  } else {
-    // No actions found
-    const noActions = document.createElement("div");
-    noActions.textContent = "No actions defined for this gesture";
-    noActions.style.marginLeft = "10px";
-    previewElement.appendChild(noActions);
-  }
+  // Set the text content directly
+  previewElement.textContent = displayText;
+  previewElement.style.fontWeight = "normal";
+  previewElement.style.padding = "8px"; // Slightly more padding for better readability
 
   // Show the preview briefly then fade out
   previewElement.style.opacity = "1";
@@ -231,7 +221,7 @@ function showGesturePreview(gestureInfo) {
   setTimeout(() => {
     previewElement.style.opacity = "0";
     previewElement.style.transition = "opacity 1s";
-  }, 3000);
+  }, 4000);
 }
 
 // --- Mouseup handler: finalize gesture, simplify, and extract directions ---
