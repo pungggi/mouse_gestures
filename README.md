@@ -1,4 +1,4 @@
-# Mouse Gestures for VS Code
+1# Mouse Gestures for VS Code
 
 Mouse gesture support for Visual Studio Code. Execute commands by performing mouse gestures in the gesture pad.
 
@@ -35,7 +35,7 @@ You can override these defaults or add new gestures by configuring `mouseGesture
 
 ## Configuration
 
-This extension contributes the following settings:
+Some examples:
 
 ```jsonc
 "mouseGestures.gestureCommands": [
@@ -118,6 +118,8 @@ This extension contributes the following settings:
   - `description`: Optional description of what the command does
   - `waitForCompletion`: Whether to wait for the command to complete before executing the next one (only applies in sequential mode)
   - `args`: Optional array of arguments to pass to the command
+
+This should allow you to work with the extension, but if you want to go deeper then read further:
 
 ## Complex Gesture Patterns
 
@@ -249,7 +251,7 @@ Common issues with complex gesture patterns and how to resolve them:
    - **Issue**: The pattern works sometimes but not always
    - **Solution**:
      - Make your gestures more distinct with clearer direction changes
-     - Adjust the `minDirectionChange` and `minVelocity` settings
+     - Draw gestures with deliberate, clear movements
      - Consider using simpler patterns with fewer direction changes
 
 3. **Wrong Command Executing**
@@ -266,7 +268,7 @@ Common issues with complex gesture patterns and how to resolve them:
    - **Solution**:
      - Reduce the number of complex patterns
      - Simplify regex patterns by avoiding excessive use of lookaheads/lookbehinds
-     - Increase the `gestureDebounceTime` setting
+     - Make gestures more deliberate and distinct
 
 5. **Regex Syntax Errors**
    - **Issue**: Pattern not working due to invalid regex syntax

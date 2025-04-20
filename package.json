@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "0.0.14",
+  "version": "0.0.16",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
@@ -37,25 +37,10 @@
     "configuration": {
       "title": "Mouse Gestures",
       "properties": {
-        "mouseGestures.minDirectionChange": {
-          "type": "number",
-          "default": 30,
-          "description": "Minimum distance (in pixels) to register a direction change"
-        },
-        "mouseGestures.minVelocity": {
-          "type": "number",
-          "default": 0.2,
-          "description": "Minimum velocity (pixels/ms) for direction change"
-        },
         "mouseGestures.enablePatternMatching": {
           "type": "boolean",
           "default": true,
           "description": "Enable pattern matching for gestures. When enabled, gestures can be defined as regular expressions for complex patterns (e.g., 'L(RU)+D')."
-        },
-        "mouseGestures.gestureDebounceTime": {
-          "type": "number",
-          "default": 500,
-          "description": "Minimum time (in ms) between gesture triggers"
         },
         "mouseGestures.pathColor": {
           "type": "string",
@@ -66,11 +51,6 @@
           "type": "number",
           "default": 1,
           "description": "Thickness of the gesture path in pixels"
-        },
-        "mouseGestures.showDirectionMarkers": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show direction change markers during gesture drawing"
         },
         "mouseGestures.showGesturePreview": {
           "type": "boolean",
@@ -168,9 +148,9 @@
     }
   },
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
+    "@eslint/js": "^9.25.0",
     "globals": "^16.0.0",
-    "webpack": "^5.99.5",
+    "webpack": "^5.99.6",
     "webpack-cli": "^6.0.1"
   }
 }

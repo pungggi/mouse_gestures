@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gesture Recognition Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background: #f7f7f7;
+    }
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #gesture-area {
+      border: 2px solid #888;
+      background: #fff;
+      width: 400px;
+      height: 400px;
+      position: relative;
+      margin-bottom: 20px;
+      touch-action: none;
+    }
+    #path-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #result {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #333;
+    }
+    #instructions {
+      margin-bottom: 20px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="instructions">
+      Draw a gesture in the box below. The detected direction sequence will appear after you finish.
+    </div>
+    <div id="gesture-area">
+      <canvas id="path-canvas" width="400" height="400"></canvas>
+    </div>
+    <div id="result">Detected sequence: <span id="sequence"></span></div>
+    <div id="simplified-points" style="margin-top:10px; color:#b36b00; font-size:1em;">
+      Simplified path points: <span id="points"></span>
+    </div>
+  </div>
+  <script src="src/gestureRecognitionCore.js"></script>
+  <script>
+    // Use the shared gesture recognition functions from gestureRecognitionCore.js
+
+    // --- Canvas and Gesture Input Handling ---
+    const gestureArea = document.getElementById("gesture-area");
+    const canvas = document.getElementById("path-canvas");
+    const ctx = canvas.getContext("2d");
+    let isDrawing = false;
+    let gesturePath = [];
+    let startPoint = null;
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.touches) {
+        return {
+          x: e.touches[0].clientX - rect.left,
+          y: e.touches[0].clientY - rect.top
+        };
+      } else {
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+    }
+
+    function drawPath(path, color = "#0074D9", width = 3, alpha = 1, dash = []) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.setLineDash(dash);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      if (path.length === 0) {
+        ctx.restore();
+        return;
+      }
+      ctx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+      }
+      ctx.stroke();
+      // Draw start point
+      ctx.fillStyle = "#2ECC40";
+      ctx.beginPath();
+      ctx.arc(path[0].x, path[0].y, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      // Draw end point
+      ctx.fillStyle = "#FF4136";
+      ctx.beginPath();
+      ctx.arc(path[path.length - 1].x, path[path.length - 1].y, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function handleGestureEnd() {
+      if (gesturePath.length < 2) {
+        gesturePath = [];
+        drawPath(gesturePath);
+        document.getElementById("sequence").textContent = "";
+        document.getElementById("points").textContent = "";
+        return;
+      }
+      // Use shared functions from gestureRecognitionCore.js
+      const epsilon = 18; // match the value used in the main code
+      const simplifiedPath = simplifyDouglasPeucker(gesturePath, epsilon);
+    
+      // Draw original path (blue), then simplified path (orange, semi-transparent, dashed)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPath(gesturePath, "#0074D9", 3, 1, []);
+      drawPath(simplifiedPath, "#FF9900", 4, 0.7, [8, 6]);
+    
+      // Use shared functions for sequence generation and normalization
+      const rawSeq = generateDirectionSequenceFromPath(simplifiedPath);
+      const normSeq = normalizeGestureSequence(rawSeq);
+      document.getElementById("sequence").textContent = normSeq;
+    
+      // Show simplified path points
+      document.getElementById("points").textContent = JSON.stringify(
+        simplifiedPath.map(pt => ({ x: Math.round(pt.x), y: Math.round(pt.y) }))
+      );
+    }
+
+    // Mouse events
+    canvas.addEventListener("mousedown", (e) => {
+      isDrawing = true;
+      gesturePath = [];
+      const pos = getCanvasPos(e);
+      gesturePath.push(pos);
+      startPoint = pos;
+      drawPath(gesturePath);
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!isDrawing) return;
+      const pos = getCanvasPos(e);
+      gesturePath.push(pos);
+      drawPath(gesturePath);
+    });
+
+    window.addEventListener("mouseup", (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      handleGestureEnd();
+    });
+
+    // Touch events
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      gesturePath = [];
+      const pos = getCanvasPos(e);
+      gesturePath.push(pos);
+      startPoint = pos;
+      drawPath(gesturePath);
+    });
+
+    canvas.addEventListener("touchmove", (e) => {
+      if (!isDrawing) return;
+      const pos = getCanvasPos(e);
+      gesturePath.push(pos);
+      drawPath(gesturePath);
+    });
+
+    window.addEventListener("touchend", (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      handleGestureEnd();
+    });
+
+    // Resize canvas to fit container
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = gestureArea.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      drawPath(gesturePath);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+  </script>
+</body>
+</html>

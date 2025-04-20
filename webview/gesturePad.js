@@ -1,7 +1,11 @@
 // Script for the Gesture Pad Webview
-
-// VS Code API object provided by the webview context
 const vscode = acquireVsCodeApi();
+
+/* global simplifyDouglasPeucker */
+/* global generateDirectionSequenceFromPath */
+/* global normalizeGestureSequence */
+
+// The gesture recognition functions are loaded from gestureRecognitionCore.js in the HTML
 
 const gestureArea = document.getElementById("gesture-area");
 const canvas = document.getElementById("path-canvas");
@@ -11,42 +15,16 @@ let startX = 0;
 let startY = 0;
 let currentX = 0;
 let currentY = 0;
-/**
- * Tracks the last detected direction and the full gesture sequence.
- * The gestureSequence variable accumulates all direction changes (e.g., "LRUDLR"),
- * supporting complex gesture patterns for advanced matching.
- */
-let lastDirection = null;
-let gestureSequence = "";
-let lastX = 0;
-let lastY = 0;
-let minDirectionChange = 30; // Minimum distance to register a direction change
-let lastTime = 0;
-let minVelocity = 0.2; // Minimum velocity (pixels/ms) for direction change
-let gestureDebounceTime = 500; // Minimum time between gesture triggers
-let lastGestureTime = 0; // Track last gesture time for debouncing
-
-// No gesture history variables needed for preview-only functionality
+// Store the full path as an array of points
+let gesturePath = [];
 
 // Variables for visual feedback
-let directionMarkers = [];
-const markerColors = {
-  L: "#ff0000", // Red
-  R: "#00ff00", // Green
-  U: "#0000ff", // Blue
-  D: "#ffff00", // Yellow
-  UL: "#ff00ff", // Magenta
-  UR: "#00ffff", // Cyan
-  DL: "#ff8000", // Orange
-  DR: "#8000ff", // Purple
-};
-const markerSize = 5; // Size of direction change markers in pixels
 
 // Customization options
 let pathColor = "#cccccc";
 let pathThickness = 1;
-let showDirectionMarkers = true;
 let enableGesturePreview = true;
+let gestureCommands = []; // Store gesture commands from configuration
 
 console.log("Gesture Pad script loaded from external file.");
 
@@ -72,19 +50,15 @@ window.addEventListener("message", (event) => {
   const message = event.data;
 
   if (message.command === "updateConfig") {
-    // Update thresholds if provided
-    if (message.thresholds) {
-      minDirectionChange = message.thresholds.minDirectionChange;
-      minVelocity = message.thresholds.minVelocity;
-      //enablePatternMatching = message.thresholds.enablePatternMatching;
-      gestureDebounceTime = message.thresholds.gestureDebounceTime;
+    // Store gesture commands
+    if (message.gestureCommands) {
+      gestureCommands = message.gestureCommands;
     }
 
     // Update visual settings if provided
     if (message.visualSettings) {
       pathColor = message.visualSettings.pathColor;
       pathThickness = message.visualSettings.pathThickness;
-      showDirectionMarkers = message.visualSettings.showDirectionMarkers;
       enableGesturePreview = message.visualSettings.showGesturePreview;
 
       // Apply settings to canvas context
@@ -108,18 +82,13 @@ gestureArea.addEventListener("mousedown", (e) => {
     startY = e.clientY;
     currentX = e.clientX;
     currentY = e.clientY;
-    lastX = e.clientX;
-    lastY = e.clientY;
-    lastTime = Date.now();
+    gesturePath = [{ x: startX, y: startY }];
     console.log("Drag Start:", startX, startY);
 
     // --- Drawing Start ---
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous path
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-
-    // Clear any existing direction markers
-    directionMarkers = [];
 
     // Prevent text selection during drag
     e.preventDefault();
@@ -129,88 +98,6 @@ gestureArea.addEventListener("mousedown", (e) => {
 // Listen for mousemove and mouseup on the window to catch events
 // even if the cursor leaves the gesture area during the drag.
 // Helper function to detect initial direction
-function detectInitialDirection(dx, dy) {
-  // Calculate the angle for consistent direction detection
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-
-  // 8-direction support (including diagonals)
-  if (angle > -22.5 && angle <= 22.5) {
-    return "R";
-  } else if (angle > 22.5 && angle <= 67.5) {
-    return "DR";
-  } else if (angle > 67.5 && angle <= 112.5) {
-    return "D";
-  } else if (angle > 112.5 && angle <= 157.5) {
-    return "DL";
-  } else if (angle > 157.5 || angle <= -157.5) {
-    return "L";
-  } else if (angle > -157.5 && angle <= -112.5) {
-    return "UL";
-  } else if (angle > -112.5 && angle <= -67.5) {
-    return "U";
-  } else {
-    return "UR";
-  }
-}
-
-// Helper function to detect direction changes
-function detectDirectionChange(newX, newY) {
-  const currentTime = Date.now();
-  const timeElapsed = currentTime - lastTime;
-
-  if (timeElapsed === 0) return null;
-
-  const dx = newX - lastX;
-  const dy = newY - lastY;
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  const velocity = distance / timeElapsed;
-
-  // Check if movement is significant enough
-  if (distance < minDirectionChange || velocity < minVelocity) {
-    return null;
-  }
-
-  // Calculate the primary direction using angles for more accurate detection
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-  let newDirection;
-
-  // 8-direction support (including diagonals)
-  if (angle > -22.5 && angle <= 22.5) {
-    newDirection = "R";
-  } else if (angle > 22.5 && angle <= 67.5) {
-    newDirection = "DR";
-  } else if (angle > 67.5 && angle <= 112.5) {
-    newDirection = "D";
-  } else if (angle > 112.5 && angle <= 157.5) {
-    newDirection = "DL";
-  } else if (angle > 157.5 || angle <= -157.5) {
-    newDirection = "L";
-  } else if (angle > -157.5 && angle <= -112.5) {
-    newDirection = "UL";
-  } else if (angle > -112.5 && angle <= -67.5) {
-    newDirection = "U";
-  } else {
-    newDirection = "UR";
-  }
-
-  // Only update tracking variables and return direction if it's different
-  if (newDirection !== lastDirection) {
-    // Add a direction marker at the point where direction changes
-    directionMarkers.push({
-      x: newX,
-      y: newY,
-      direction: newDirection,
-      color: markerColors[newDirection] || "#ffffff",
-    });
-
-    lastX = newX;
-    lastY = newY;
-    lastTime = currentTime;
-    return newDirection;
-  }
-
-  return null;
-}
 
 window.addEventListener("mousemove", (e) => {
   if (isDragging) {
@@ -221,35 +108,71 @@ window.addEventListener("mousemove", (e) => {
     ctx.lineTo(currentX, currentY);
     ctx.stroke();
 
-    // Draw direction markers if enabled
-    if (showDirectionMarkers) {
-      directionMarkers.forEach((marker) => {
-        ctx.save();
-        ctx.fillStyle = marker.color;
-        ctx.beginPath();
-        ctx.arc(marker.x, marker.y, markerSize, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
-    }
-
-    // Detect direction changes
-    const newDirection = detectDirectionChange(currentX, currentY);
-    if (newDirection) {
-      if (!lastDirection) {
-        lastDirection = newDirection;
-        gestureSequence = newDirection;
-      } else if (newDirection !== lastDirection) {
-        lastDirection = newDirection;
-        gestureSequence += newDirection;
-      }
-      console.log(`Current gesture sequence: ${gestureSequence}`);
-    }
+    // Record the point in the gesture path
+    gesturePath.push({ x: currentX, y: currentY });
   }
 });
 
-// Function to display the current gesture
-function showGesturePreview(sequence) {
+// Function to find matching gesture command and get all action descriptions
+function findGestureDescriptions(sequence) {
+  // Find exact match first
+  const match = gestureCommands.find((cmd) => cmd.gesture === sequence);
+  if (match && match.actions && match.actions.length > 0) {
+    // Return all action descriptions
+    return {
+      gesture: sequence,
+      descriptions: match.actions.map((action) => ({
+        command: action.command,
+        description: action.description || "No description",
+      })),
+    };
+  }
+
+  // Try pattern match if no exact match
+  // Get all pattern-type commands
+  const patternCommands = gestureCommands.filter(
+    (cmd) => cmd.matchType === "pattern"
+  );
+
+  // Log for debugging
+  console.log(
+    `Testing ${sequence} against ${patternCommands.length} pattern commands`
+  );
+
+  // Test each pattern against the sequence
+  for (const cmd of patternCommands) {
+    try {
+      console.log(`Testing pattern: ${cmd.gesture}`);
+      // Create a RegExp object from the gesture pattern
+      const regex = new RegExp(cmd.gesture);
+
+      // Test if the sequence matches the pattern
+      if (regex.test(sequence)) {
+        console.log(`Match found for pattern: ${cmd.gesture}`);
+        return {
+          gesture: sequence,
+          descriptions: cmd.actions.map((action) => ({
+            command: action.command,
+            description: action.description || "No description",
+          })),
+        };
+      }
+    } catch (error) {
+      console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
+      // Continue to the next pattern if this one is invalid
+    }
+  }
+
+  // No match found
+  console.log(`No pattern match found for: ${sequence}`);
+  return {
+    gesture: sequence,
+    descriptions: [],
+  };
+}
+
+// Function to display the current gesture and all its action descriptions
+function showGesturePreview(gestureInfo) {
   // Create or update a preview element
   let previewElement = document.getElementById("gesture-preview");
   if (!previewElement) {
@@ -264,86 +187,88 @@ function showGesturePreview(sequence) {
     previewElement.style.borderRadius = "3px";
     previewElement.style.fontFamily = "monospace";
     previewElement.style.fontSize = "14px";
+    previewElement.style.maxWidth = "90%";
+    previewElement.style.overflow = "auto";
     gestureArea.appendChild(previewElement);
   }
 
-  previewElement.textContent = `Gesture: ${sequence}`;
+  // Clear previous content
+  previewElement.innerHTML = "";
+
+  // Add gesture sequence
+  const gestureHeader = document.createElement("div");
+  gestureHeader.textContent = `Gesture: ${gestureInfo.gesture}`;
+  gestureHeader.style.fontWeight = "bold";
+  gestureHeader.style.marginBottom = "5px";
+  previewElement.appendChild(gestureHeader);
+
+  // If we have descriptions, add them
+  if (gestureInfo.descriptions.length > 0) {
+    const actionsList = document.createElement("div");
+
+    gestureInfo.descriptions.forEach((item, index) => {
+      const actionItem = document.createElement("div");
+      actionItem.style.marginLeft = "10px";
+      actionItem.style.marginBottom = "3px";
+      actionItem.textContent = `${index + 1}. ${item.description} (${
+        item.command
+      })`;
+      actionsList.appendChild(actionItem);
+    });
+
+    previewElement.appendChild(actionsList);
+  } else {
+    // No actions found
+    const noActions = document.createElement("div");
+    noActions.textContent = "No actions defined for this gesture";
+    noActions.style.marginLeft = "10px";
+    previewElement.appendChild(noActions);
+  }
 
   // Show the preview briefly then fade out
   previewElement.style.opacity = "1";
+  // Increase timeout for longer display since there's more content
   setTimeout(() => {
     previewElement.style.opacity = "0";
     previewElement.style.transition = "opacity 1s";
-  }, 2000);
+  }, 3000);
 }
 
-// Function to normalize gesture sequences by removing repeated consecutive directions
-function normalizeGestureSequence(sequence) {
-  // Remove repeated consecutive directions (e.g., "LLLRR" -> "LR")
-  let normalized = "";
-  for (let i = 0; i < sequence.length; i++) {
-    if (i === 0 || sequence[i] !== sequence[i - 1]) {
-      normalized += sequence[i];
-    }
-  }
-  return normalized;
-}
-
-window.addEventListener("mouseup", (e) => {
-  // Process mouseup if dragging and it's the same button that started the drag
-  if (isDragging && (e.button === 0 || e.button === 2)) {
+// --- Mouseup handler: finalize gesture, simplify, and extract directions ---
+window.addEventListener("mouseup", () => {
+  if (isDragging) {
     isDragging = false;
-    console.log("Drag End:", currentX, currentY);
 
-    // Use final currentX/Y for calculation
-    const dx = currentX - startX;
-    const dy = currentY - startY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const minDistance = 30; // Minimum distance to be considered a gesture
+    // Only process if gesturePath has enough points
+    if (gesturePath.length > 1) {
+      // 1. Aggressive path simplification (Douglas-Peucker)
+      // Epsilon controls simplification strength; higher = more aggressive
+      const epsilon = 18; // pixels, adjust as needed for best results
+      const simplifiedPath = simplifyDouglasPeucker(gesturePath, epsilon);
 
-    console.log(
-      `Gesture details: dx=${dx}, dy=${dy}, dist=${distance.toFixed(2)}`
-    );
+      // 2. Generate direction sequence with increased MIN_DIST and angle threshold
+      // We'll override MIN_DIST and add an angle threshold inside a local function
 
-    const currentTime = Date.now();
-    if (
-      distance > minDistance &&
-      currentTime - lastGestureTime > gestureDebounceTime
-    ) {
-      let sequence = gestureSequence || detectInitialDirection(dx, dy);
+      // 3. Generate and normalize direction sequence
+      let rawSequence = generateDirectionSequenceFromPath(simplifiedPath);
+      let normalizedSequence = normalizeGestureSequence(rawSequence);
 
-      // Normalize the sequence by removing repeated consecutive directions
-      sequence = normalizeGestureSequence(sequence);
-
-      console.log(`Gesture sequence detected: ${sequence}`);
-
-      // Show gesture preview if enabled
+      // 4. Show preview and send to extension
       if (enableGesturePreview) {
-        showGesturePreview(sequence);
+        const gestureInfo = findGestureDescriptions(normalizedSequence);
+        showGesturePreview(gestureInfo);
       }
 
-      // Send message back to the extension
       vscode.postMessage({
         command: "gestureDetected",
-        details: { sequence: sequence },
+        sequence: normalizedSequence,
+        rawSequence: rawSequence,
+        simplifiedPath: simplifiedPath,
+        originalPath: gesturePath,
       });
-
-      // Update last gesture time for debouncing
-      lastGestureTime = currentTime;
-
-      // Clear the canvas after gesture is processed
-      setTimeout(() => ctx.clearRect(0, 0, canvas.width, canvas.height), 50);
-    } else {
-      if (distance <= minDistance) {
-        console.log("Movement too short, no gesture detected.");
-      } else {
-        console.log("Gesture ignored due to debouncing.");
-      }
     }
 
-    // Reset gesture tracking
-    gestureSequence = "";
-    lastDirection = null;
-    directionMarkers = []; // Clear direction markers
+    // Reset path for next gesture
+    gesturePath = [];
   }
 });

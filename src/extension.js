@@ -53,14 +53,14 @@ class GesturePadViewProvider {
     // Configure webview options
     webviewView.webview.options = {
       enableScripts: true,
-      localResourceRoots: [vscode.Uri.joinPath(this._extensionUri, "webview")],
+      localResourceRoots: [
+        vscode.Uri.joinPath(this._extensionUri, "webview"),
+        vscode.Uri.joinPath(this._extensionUri, "src"),
+      ],
     };
 
     // Initialize webview content
-    const scriptUri = webviewView.webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, "webview", "gesturePad.js")
-    );
-    webviewView.webview.html = this._getHtmlForWebview(scriptUri);
+    webviewView.webview.html = this._getHtmlForWebview(webviewView);
 
     // Initialize configuration
     this._updateConfigCache();
@@ -69,7 +69,7 @@ class GesturePadViewProvider {
     // Setup message handling with performance optimization
     const messageHandler = (message) => {
       if (message.command === "gestureDetected") {
-        this._handleGesture(message.details);
+        this._handleGesture(message.details || message);
       }
     };
 
@@ -86,13 +86,8 @@ class GesturePadViewProvider {
 
   // Default configuration values
   static DEFAULT_CONFIG = {
-    minDirectionChange: 30,
-    minVelocity: 0.2,
-    enablePatternMatching: true,
-    gestureDebounceTime: 500,
     pathColor: "#cccccc",
     pathThickness: 1,
-    showDirectionMarkers: true,
     showGesturePreview: true,
   };
 
@@ -113,20 +108,7 @@ class GesturePadViewProvider {
     const config = vscode.workspace.getConfiguration("mouseGestures");
     this._configCache = {
       gestureCommands: config.get("gestureCommands") || [],
-      thresholds: {
-        minDirectionChange:
-          config.get("minDirectionChange") ||
-          GesturePadViewProvider.DEFAULT_CONFIG.minDirectionChange,
-        minVelocity:
-          config.get("minVelocity") ||
-          GesturePadViewProvider.DEFAULT_CONFIG.minVelocity,
-        enablePatternMatching:
-          config.get("enablePatternMatching") ||
-          GesturePadViewProvider.DEFAULT_CONFIG.enablePatternMatching,
-        gestureDebounceTime:
-          config.get("gestureDebounceTime") ||
-          GesturePadViewProvider.DEFAULT_CONFIG.gestureDebounceTime,
-      },
+      // No thresholds needed anymore
       visualSettings: {
         pathColor:
           config.get("pathColor") ||
@@ -134,7 +116,6 @@ class GesturePadViewProvider {
         pathThickness:
           config.get("pathThickness") ||
           GesturePadViewProvider.DEFAULT_CONFIG.pathThickness,
-        showDirectionMarkers: config.get("showDirectionMarkers") !== false,
         showGesturePreview: config.get("showGesturePreview") !== false,
       },
     };
@@ -149,7 +130,6 @@ class GesturePadViewProvider {
     webview.postMessage({
       command: "updateConfig",
       gestureCommands: this._configCache.gestureCommands,
-      thresholds: this._configCache.thresholds,
       visualSettings: this._configCache.visualSettings,
     });
   }
@@ -300,17 +280,26 @@ class GesturePadViewProvider {
   }
 
   // Method to generate HTML content
-  _getHtmlForWebview(scriptUri) {
-    // Use a nonce to only allow specific scripts to be run
+  _getHtmlForWebview(webviewView) {
+    // Get URIs for scripts, using webview URIs to ensure proper security
     const nonce = getNonce();
+    const gestureRecognitionCoreUri = webviewView.webview.asWebviewUri(
+      vscode.Uri.joinPath(
+        this._extensionUri,
+        "src",
+        "gestureRecognitionCore.js"
+      )
+    );
+    const gesturePadUri = webviewView.webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, "webview", "gesturePad.js")
+    );
 
     return /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <!--
-        Use a content security policy to only allow loading images from https or from our extension directory,
-        and only allow scripts that have a specific nonce.
+        Use a content security policy that allows loading our extension resources and scripts with nonces.
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -325,7 +314,8 @@ class GesturePadViewProvider {
         <canvas id="path-canvas"></canvas>
     </div>
 
-    <script nonce="${nonce}" src="${scriptUri}"></script>
+    <script nonce="${nonce}" src="${gestureRecognitionCoreUri}"></script>
+    <script nonce="${nonce}" src="${gesturePadUri}"></script>
 </body>
 </html>`;
   }
