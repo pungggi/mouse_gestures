@@ -24,10 +24,6 @@ module.exports = {
           to: "src/gestureRecognitionCore.js",
         },
         {
-          from: "webview/gesturePad.js",
-          to: "webview/gesturePad.js",
-        },
-        {
           from: "test_gesture_recognition.html",
           to: "test_gesture_recognition.html",
         },
