@@ -32,7 +32,7 @@ try {
       if (stat.isFile()) {
         fs.unlinkSync(filePath);
       } else if (stat.isDirectory()) {
-        fs.rmdirSync(filePath, { recursive: true });
+        fs.rmSync(filePath, { recursive: true });
       }
     }
 

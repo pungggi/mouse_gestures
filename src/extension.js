@@ -55,7 +55,8 @@ class GesturePadViewProvider {
       enableScripts: true,
       localResourceRoots: [
         vscode.Uri.joinPath(this._extensionUri, "webview"),
-        vscode.Uri.joinPath(this._extensionUri, "src"),
+        vscode.Uri.joinPath(this._extensionUri, "dist/src"),
+        vscode.Uri.joinPath(this._extensionUri, "dist"),
       ],
     };
 
@@ -286,7 +287,7 @@ class GesturePadViewProvider {
     const gestureRecognitionCoreUri = webviewView.webview.asWebviewUri(
       vscode.Uri.joinPath(
         this._extensionUri,
-        "src",
+        "dist/src",
         "gestureRecognitionCore.js"
       )
     );

@@ -1,4 +1,5 @@
 const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
   entry: "./src/extension.js",
@@ -14,8 +15,23 @@ module.exports = {
   },
   resolve: {
     extensions: [".js"],
-    fallback: {
-      debug: false,
-    },
   },
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: "src/gestureRecognitionCore.js",
+          to: "src/gestureRecognitionCore.js",
+        },
+        {
+          from: "webview/gesturePad.js",
+          to: "webview/gesturePad.js",
+        },
+        {
+          from: "test_gesture_recognition.html",
+          to: "test_gesture_recognition.html",
+        },
+      ],
+    }),
+  ],
 };

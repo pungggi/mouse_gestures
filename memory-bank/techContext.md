@@ -37,6 +37,12 @@ This document details the technologies, APIs, setup, and constraints relevant to
 - **Project Structure:** Standard VS Code extension structure, now including a `webview/` directory containing `gesturePad.js` and a `media/` directory containing `mouse.svg`. The webview HTML is generated within `src/extension.js`.
 - **Build/Packaging:** Uses `vsce`. Need to ensure the `webview/` and `media/` directories and their contents are included in the packaged extension. `.vscodeignore` should now exclude `out/**` instead of `src/**` to include the compiled JavaScript.
 - **Debugging:** Requires debugging both the Extension Host process (standard F5) and the Webview process (using "Developer: Open Webview Developer Tools" command).
+- **Build Process (Webpack):**
+
+  - The extension is bundled using Webpack (`webpack.config.js`) for both development and production.
+  - The `copy-webpack-plugin` is used to ensure necessary static assets (like those in `webview/` and `media/`) are copied to the `dist/` directory during the build process, making them available in the packaged extension.
+
+- **Script Automation:** - `scripts/prepublish.js`: Automates pre-publishing tasks by incrementing the patch version in `package.json` and updating the main entry point to `./dist/extension.js` to ensure the packaged version is used. - `scripts/afterpublish.js`: Handles post-publishing cleanup by reverting the main entry point in `package.json` back to `./src/extension.js` and deleting all files in the `dist` directory to maintain a clean project state.
 
 ## Technical Constraints & Challenges (Webview Approach)
 

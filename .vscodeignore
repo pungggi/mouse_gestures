@@ -19,3 +19,4 @@ eslint.config.mjs
 .roomodes
 memory-bank/
 examples/
+test_gesture_recognition.html
