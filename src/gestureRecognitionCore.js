@@ -1,10 +1,6 @@
 // Shared gesture recognition logic
 
-// Helper to determine if we're in a browser or Node.js environment
 /* global window */
-const isNode = typeof window === "undefined";
-// Use the built-in global object in Node.js environment
-const globalObj = isNode ? global : window;
 
 /**
  * Douglas-Peucker path simplification algorithm
@@ -133,9 +129,12 @@ const exportedFunctions = {
   normalizeGestureSequence,
 };
 
-// Export for Node.js or attach to window for browser
+// Export for Node.js or explicitly attach to window for browser
 if (typeof module !== "undefined" && module.exports) {
   module.exports = exportedFunctions;
-} else {
-  Object.assign(globalObj, exportedFunctions);
+} else if (typeof window !== "undefined") {
+  // Explicitly assign each function to the window object
+  window.simplifyDouglasPeucker = simplifyDouglasPeucker;
+  window.generateDirectionSequenceFromPath = generateDirectionSequenceFromPath;
+  window.normalizeGestureSequence = normalizeGestureSequence;
 }
