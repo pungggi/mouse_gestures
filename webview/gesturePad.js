@@ -261,4 +261,8 @@ window.addEventListener("mouseup", () => {
     // Reset path for next gesture
     gesturePath = [];
   }
+  // Send a message to the extension indicating that the webview is ready
+  vscode.postMessage({
+    command: "webviewReady",
+  });
 });

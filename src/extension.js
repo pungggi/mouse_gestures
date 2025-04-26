@@ -70,14 +70,14 @@ class GesturePadViewProvider {
     // Initialize webview content
     webviewView.webview.html = this._getHtmlForWebview(webviewView);
 
-    // Initialize configuration
-    this._updateConfigCache();
-    this._sendConfig(webviewView.webview);
-
     // Setup message handling with performance optimization
     const messageHandler = (message) => {
       if (message.command === "gestureDetected") {
         this._handleGesture(message.details || message);
+      } else if (message.command === "webviewReady") {
+        // Initialize and send configuration only after webview is ready
+        this._updateConfigCache();
+        this._sendConfig(webviewView.webview);
       }
     };
 
@@ -116,7 +116,6 @@ class GesturePadViewProvider {
     const config = vscode.workspace.getConfiguration("mouseGestures");
     this._configCache = {
       gestureCommands: config.get("gestureCommands") || [],
-      // No thresholds needed anymore
       visualSettings: {
         pathColor:
           config.get("pathColor") ||
