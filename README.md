@@ -12,6 +12,29 @@ Mouse gesture support for Visual Studio Code. Execute commands by performing mou
 - Support for complex gesture patterns using regular expressions
 - Full 8-direction support including diagonal movements (UR, UL, DR, DL)
 - Assign commands to unrecognized gestures with a simple prompt
+  ![Gesture Pad Interface](https://i.imgur.com/yJjZJyt.gif)
+
+  Adds the following to the setting:
+
+  ```jsonc
+  {
+    "gesture": "DURDRU",
+    "matchType": "exact",
+    "actions": [
+      {
+        "command": "git.commitStaged",
+        "description": "Commit staged files"
+      },
+      {
+        "command": "git.closeAllDiffEditors",
+        "description": ""
+      }
+    ],
+    "match": {
+      "executionMode": "parallel"
+    }
+  }
+  ```
 
 ## How It Works
 
@@ -21,18 +44,12 @@ The extension provides a gesture pad view in the activity bar where you can perf
 2. Move the mouse to draw your gesture (e.g., move right for "R" gesture, down-right for "DR" gesture)
 3. Release the mouse button to execute the configured command(s)
 
-## Usage
-
-1. Open the gesture pad view from the activity bar (hand/mouse icon)
-2. Configure your desired gesture-to-command mappings in settings
-3. Perform gestures to execute commands
-
 ### Default Gesture Mappings
 
 - `R` (Right): Switch to next editor
 - `L` (Left): Switch to previous editor
 
-You can override these defaults or add new gestures by configuring `mouseGestures.gestureCommands` in your settings. The extension supports both cardinal directions (R, L, U, D) and diagonal directions (UR, UL, DR, DL), allowing for more precise and versatile gesture patterns.
+You can override these defaults or add new gestures by configuring `mouseGestures.gestureCommands` in your settings. The extension supports both cardinal directions (R, L, U, D) and diagonal directions (UR, UL, DR, DL).
 
 ## Configuration
 
