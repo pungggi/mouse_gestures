@@ -239,7 +239,12 @@ For creating reliable and memorable complex gesture patterns:
 
 ### Technical Details
 
-The extension implements regex pattern matching with the following approach:
+The extension implements [Douglas-Peucker path simplification algorithm](https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm) and regex pattern matching with the following approach:
+
+- Raw mouse movements are captured as coordinate points
+- The Douglas-Peucker algorithm simplifies the path by removing redundant points
+- The simplified path is converted to a sequence of directional movements (R, L, U, D, UR, UL, DR, DL)
+- For pattern-based gestures, this sequence is matched against configured regex patterns
 
 1. When a gesture is performed, the system captures the sequence of directions (e.g., "LRUDLR")
 2. If pattern matching is enabled, the system checks each pattern-type gesture configuration
