@@ -3,7 +3,6 @@ const vscode = require("vscode");
 
 function activate(context) {
   // context here is ExtensionContext
-  console.log("Mouse Gesture extension activating...");
 
   // Pass the extension's subscriptions array to the provider
   const provider = new GesturePadViewProvider(
@@ -17,8 +16,6 @@ function activate(context) {
       provider
     )
   );
-
-  console.log("Gesture Pad View Provider registered.");
 }
 
 class GesturePadViewProvider {
@@ -269,10 +266,89 @@ class GesturePadViewProvider {
       );
 
       if (!match) {
-        // Only log as unknown if no match is found at all
-        console.log(
-          `Unknown gesture or no commands mapped for gesture: ${gesture}`
+        // Prompt user to assign a command to the unrecognized gesture
+        const assignOption = "Assign Command";
+        const cancelOption = "Cancel";
+        const response = await vscode.window.showInformationMessage(
+          `Gesture '${gesture}' is not assigned. Assign a command?`,
+          assignOption,
+          cancelOption
         );
+        if (response === assignOption) {
+          const selectedCommand = await this._selectCommand();
+          if (selectedCommand) {
+            // Prompt for an optional description
+            const description = await vscode.window.showInputBox({
+              prompt: "Enter a description for this gesture (optional):",
+              placeHolder: "Leave blank to skip",
+              ignoreFocusOut: true,
+            });
+
+            const newBinding = {
+              gesture: gesture,
+              matchType: "exact",
+              actions: [
+                { command: selectedCommand, description: description || "" },
+              ],
+            };
+
+            // Loop to add multiple commands
+            while (true) {
+              const addMore = await vscode.window.showQuickPick(
+                ["No", "Parallel", "Sequential"],
+                {
+                  placeHolder:
+                    "Do you want to add another command to this gesture?",
+                  ignoreFocusOut: true,
+                }
+              );
+
+              if (addMore === "No" || !addMore) {
+                break;
+              }
+
+              const executionMode = addMore.toLowerCase();
+              newBinding.match = newBinding.match || {};
+              newBinding.match.executionMode = executionMode;
+
+              const additionalCommand = await this._selectCommand();
+              if (additionalCommand) {
+                newBinding.actions.push({
+                  command: additionalCommand,
+                  description: "",
+                });
+              } else {
+                break;
+              }
+            }
+
+            // Update the global settings with the new gesture-command mapping
+            const config = vscode.workspace.getConfiguration("mouseGestures");
+            const currentBindings = config.get("gestureCommands") || [];
+            const updatedBindings = [...currentBindings, newBinding];
+            try {
+              await config.update(
+                "gestureCommands",
+                updatedBindings,
+                vscode.ConfigurationTarget.Global
+              );
+              // Log the current state of settings after update to verify
+              const updatedConfig =
+                vscode.workspace.getConfiguration("mouseGestures");
+              updatedConfig.get("gestureCommands") || [];
+            } catch (error) {
+              console.error("Error updating gesture bindings:", error);
+              vscode.window.showErrorMessage(
+                `Failed to update gesture bindings: ${error.message}`
+              );
+            }
+            // Update the config cache and send to webview
+            this._updateConfigCache();
+            if (this._view) {
+              this._sendConfig(this._view.webview);
+            }
+          }
+        }
         return;
       }
 
@@ -287,6 +363,39 @@ class GesturePadViewProvider {
   }
 
   // Method to generate HTML content
+  // Method to show a Quick Pick UI for selecting a VS Code command
+  async _selectCommand() {
+    const quickPick = vscode.window.createQuickPick();
+    quickPick.placeholder = "Search for a VS Code command...";
+    quickPick.canSelectMany = false;
+    quickPick.matchOnDescription = true;
+    quickPick.matchOnDetail = true;
+
+    // Fetch all available command IDs
+    const commandIds = await vscode.commands.getCommands(true);
+    quickPick.items = commandIds.map((id) => ({
+      label: id,
+    }));
+
+    return new Promise((resolve) => {
+      let selectedCommand = undefined;
+      quickPick.onDidAccept(() => {
+        const selected = quickPick.selectedItems[0];
+        selectedCommand = selected ? selected.label : undefined;
+        quickPick.dispose();
+        resolve(selectedCommand);
+      });
+      quickPick.onDidHide(() => {
+        quickPick.dispose();
+        // Only resolve with undefined if no selection was made
+        if (selectedCommand === undefined) {
+          resolve(undefined);
+        }
+        // If a selection was made, do not override it
+      });
+      quickPick.show();
+    });
+  }
   _getHtmlForWebview(webviewView) {
     // Get URIs for scripts, using webview URIs to ensure proper security
     const nonce = getNonce();
@@ -339,9 +448,7 @@ function getNonce() {
   return text;
 }
 
-function deactivate() {
-  console.log("Mouse Gesture extension deactivated.");
-}
+function deactivate() {}
 
 module.exports = {
   activate,

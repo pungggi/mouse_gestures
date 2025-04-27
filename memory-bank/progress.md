@@ -159,3 +159,22 @@
 - **Impact:** Improved performance, reliability, and maintainability of the gesture recognition system while reducing resource usage and enhancing error handling capabilities.
 
 ---
+
+**Feature: Assign Command to Unrecognized Gesture**
+
+- **Date:** 2025-04-27
+- **Status:** Implemented
+- **Description:** Added a feature that prompts users to assign a command to an unrecognized gesture. This enhances user customization by allowing them to define actions for new or previously unmapped gestures.
+- **Technical Approach:**
+  - Integrated gesture detection to identify unrecognized patterns.
+  - Developed a UI prompt for users to select a command from a list.
+  - Added functionality for optional description input to document the gesture's purpose.
+  - Implemented logic to save the new gesture-command binding to user settings for persistent use.
+- **Implementation Details:**
+  - Command selection UI for user interaction.
+  - Gesture detection integration to trigger the assignment process.
+  - Settings update logic to store the new bindings.
+  - Optional description input for user documentation.
+  - Debugging fixes to ensure reliable operation.
+- **Files Modified:** `src/extension.js`, `webview/gesturePad.js`
+- **Impact:** Significantly improves user experience by allowing personalization of gesture mappings, making the extension more adaptable to individual workflows.
