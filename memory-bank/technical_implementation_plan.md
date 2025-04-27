@@ -53,6 +53,12 @@ The complex gesture pattern recognition feature has been successfully implemente
 
 3. **Usage**: Open the Gesture Pad view from the Activity Bar, then perform gestures with the configured mouse button (default: right). The extension will recognize complex patterns and execute the mapped commands.
 
+### Gesture Path Visualization (Updated April 27, 2025)
+
+- The gesture path drawn in the Gesture Pad (`webview/gesturePad.js`) is visualized as a line connecting the recorded points.
+- A distinct circle marker is drawn at the starting point of the path.
+- The arrowhead marker previously shown at the end point has been removed.
+
 ## Core Issue: Extension-Webview Mismatch (RESOLVED: April 16, 2025)
 
 ## Gesture Matching Enhancements (RESOLVED: April 16, 2025)

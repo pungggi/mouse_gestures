@@ -90,6 +90,13 @@ gestureArea.addEventListener("mousedown", (e) => {
     ctx.beginPath();
     ctx.moveTo(startX, startY);
 
+    // Draw a circle at the starting point
+    ctx.arc(startX, startY, 5, 0, Math.PI * 2); // Draw a circle with radius 5
+    ctx.fillStyle = pathColor;
+    ctx.fill();
+    ctx.beginPath(); // Start a new path for the line
+    ctx.moveTo(startX, startY);
+
     // Prevent text selection during drag
     e.preventDefault();
   }
@@ -229,21 +236,17 @@ window.addEventListener("mouseup", () => {
   if (isDragging) {
     isDragging = false;
 
-    // Only process if gesturePath has enough points
     if (gesturePath.length > 1) {
       // 1. Aggressive path simplification (Douglas-Peucker)
       // Epsilon controls simplification strength; higher = more aggressive
       const epsilon = 18; // pixels, adjust as needed for best results
       const simplifiedPath = simplifyDouglasPeucker(gesturePath, epsilon);
 
-      // 2. Generate direction sequence with increased MIN_DIST and angle threshold
-      // We'll override MIN_DIST and add an angle threshold inside a local function
-
-      // 3. Generate and normalize direction sequence
+      // 2. Generate and normalize direction sequence
       let rawSequence = generateDirectionSequenceFromPath(simplifiedPath);
       let normalizedSequence = normalizeGestureSequence(rawSequence);
 
-      // 4. Show preview and send to extension
+      // 3. Show preview and send to extension
       if (enableGesturePreview) {
         const gestureInfo = findGestureDescriptions(normalizedSequence);
         showGesturePreview(gestureInfo);
