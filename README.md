@@ -12,7 +12,7 @@ Mouse gesture support for Visual Studio Code. Execute commands by performing mou
 - Support for complex gesture patterns using regular expressions
 - Full 8-direction support including diagonal movements (UR, UL, DR, DL)
 - Assign commands to unrecognized gestures with a simple prompt
-  ![Gesture Pad Interface](https://i.imgur.com/yJjZJyt.gif)
+  ![Gesture Pad Interface](https://i.imgur.com/w8IptDb.gif)
 
   Adds the following to the setting:
 
