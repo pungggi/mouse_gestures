@@ -170,13 +170,14 @@ class GesturePadViewProvider {
     } else {
       for (const action of match.actions) {
         try {
-          const { success } = await this._executeCommand(action);
-          if (action.waitForCompletion && !success) {
-            break;
-          }
+          await this._executeCommand(action);
         } catch (error) {
           console.error(`Command execution failed:`, error);
-          if (action.waitForCompletion) break;
+        }
+        if (action.waitSeconds > 0) {
+          const sleep = (ms) =>
+            new Promise((resolve) => setTimeout(resolve, ms));
+          await sleep(action.waitSeconds * 1000);
         }
       }
     }

@@ -130,7 +130,7 @@ function findGestureDescriptions(sequence) {
       gesture: sequence,
       descriptions: match.actions.map((action) => ({
         command: action.command,
-        description: action.description || "No description",
+        description: action.description || "",
       })),
     };
   }
@@ -160,7 +160,7 @@ function findGestureDescriptions(sequence) {
           gesture: sequence,
           descriptions: cmd.actions.map((action) => ({
             command: action.command,
-            description: action.description || "No description",
+            description: action.description || "",
           })),
         };
       }

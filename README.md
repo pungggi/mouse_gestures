@@ -72,8 +72,7 @@ Some examples:
     "actions": [
       {
         "command": "workbench.action.files.save",
-        "description": "Save current file",
-        "waitForCompletion": true
+        "description": "Save current file"
       },
       {
         "command": "workbench.action.closeActiveEditor",
@@ -106,6 +105,32 @@ Some examples:
         "description": "Toggle sidebar visibility"
       }
     ]
+  },
+  {
+    // Using args
+    "gesture": "U",
+    "matchType": "exact",
+    "executionMode": "sequential",
+    "actions": [
+        {
+            "command": "workbench.action.terminal.newWithCwd",
+            "description": ""
+        },
+        {
+            "command": "workbench.action.terminal.sendSequence",
+            "description": "Open app.json",
+            "args": [
+                {
+                    "text": "code app.json\r"
+                }
+            ],
+            "waitSeconds": 1
+        },
+        {
+            "command": "workbench.action.terminal.kill",
+            "description": ""
+        }
+    ]
   }
 ]
 ```
@@ -132,7 +157,7 @@ Some examples:
 - `actions`: Array of command objects, each containing:
   - `command`: The VS Code command ID to execute (required)
   - `description`: Optional description of what the command does
-  - `waitForCompletion`: Whether to wait for the command to complete before executing the next one (only applies in sequential mode)
+  - `waitSeconds`: Number of seconds to wait before executing the next command (only applies in sequential mode, must be a positive integer)
   - `args`: Optional array of arguments to pass to the command
 
 This should allow you to work with the extension, but if you want to go deeper then read further:
