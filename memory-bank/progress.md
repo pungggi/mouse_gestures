@@ -178,3 +178,24 @@
   - Debugging fixes to ensure reliable operation.
 - **Files Modified:** `src/extension.js`, `webview/gesturePad.js`
 - **Impact:** Significantly improves user experience by allowing personalization of gesture mappings, making the extension more adaptable to individual workflows.
+
+---
+
+**Feature: Mouse Gestures Cheat Sheet**
+
+- **Date:** 2025-04-28
+- **Status:** Implemented
+- **Description:** Added a new command "Mouse Gestures: Show Cheat Sheet" that displays a visually organized cheat sheet of all configured gestures. This feature provides a comprehensive overview of gesture mappings, making it easier for users to reference and remember their custom gestures.
+- **Technical Approach:**
+  - Implemented a new command in `src/extension.js` to create a webview panel for the cheat sheet.
+  - Created `webview/cheatSheet.js` to handle the rendering of gestures and commands within the webview.
+  - Designed a responsive grid layout with cards for each gesture, including visual representations of gesture paths.
+  - Enhanced command display with specific formatting for parallel and sequential commands.
+- **Implementation Details:**
+  - Gesture visualizations start with a circle and use appropriately sized paths.
+  - Commands are formatted to show only descriptions when available, and only the last part of command IDs after the final dot when descriptions are not available.
+  - Parallel commands are displayed on separate lines with arrows (→).
+  - Sequential commands are displayed on separate lines with numbering (1., 2., 3., etc.).
+  - Used VS Code theme variables for consistent appearance and added hover effects for better interactivity.
+- **Files Modified:** `src/extension.js`, `webview/cheatSheet.js`, `README.md`
+- **Impact:** Greatly enhances user experience by providing an intuitive, visual reference for all configured gestures, reducing the learning curve and improving accessibility of custom mappings.

@@ -10,11 +10,75 @@ function activate(context) {
     context.subscriptions
   );
 
+  // Register the webview provider and cheatSheet command
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       GesturePadViewProvider.viewType,
       provider
-    )
+    ),
+    vscode.commands.registerCommand("mouseGestures.cheatSheet", () => {
+      const panel = vscode.window.createWebviewPanel(
+        "mouseGesturesCheatSheet",
+        "Mouse Gestures Cheat Sheet",
+        vscode.ViewColumn.One,
+        {
+          enableScripts: true,
+          localResourceRoots: [
+            vscode.Uri.joinPath(context.extensionUri, "webview"),
+          ],
+        }
+      );
+
+      // Get the local path to script
+      const scriptPathOnDisk = vscode.Uri.joinPath(
+        context.extensionUri,
+        "webview",
+        "cheatSheet.js"
+      );
+      const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+
+      // Generate nonce for CSP
+      const nonce = getNonce();
+
+      panel.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
+    <title>Mouse Gestures Cheat Sheet</title>
+    <style>
+        body { padding: 20px; font-family: system-ui; }
+        .gesture-row { display: flex; align-items: center; margin: 10px 0; padding: 10px; border-bottom: 1px solid #ccc; }
+        .command-id { min-width: 200px; margin-right: 20px; }
+        svg { background: #f5f5f5; border-radius: 4px; }
+        svg line { stroke: var(--vscode-editor-foreground); }
+        svg polygon { fill: var(--vscode-editor-foreground); }
+    </style>
+</head>
+<body>
+    <div id="gesture-list"></div>
+    <script nonce="${nonce}" src="${scriptUri}"></script>
+</body>
+</html>`;
+
+      const gestureCommands =
+        vscode.workspace
+          .getConfiguration("mouseGestures")
+          .get("gestureCommands") || [];
+      panel.webview.postMessage({
+        command: "loadGestures",
+        data: gestureCommands,
+      });
+
+      panel.onDidDispose(
+        () => {
+          // Cleanup if necessary
+        },
+        null,
+        context.subscriptions
+      );
+    })
   );
 }
 
