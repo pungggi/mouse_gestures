@@ -307,9 +307,7 @@ class GesturePadViewProvider {
                 break;
               }
 
-              const executionMode = addMore.toLowerCase();
-              newBinding.match = newBinding.match || {};
-              newBinding.match.executionMode = executionMode;
+              newBinding.executionMode = addMore.toLowerCase();
 
               const additionalCommand = await this._selectCommand();
               if (additionalCommand) {

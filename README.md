@@ -28,11 +28,9 @@ Mouse gesture support for Visual Studio Code. Execute commands by performing mou
       {
         "command": "git.closeAllDiffEditors",
         "description": ""
-      }
-    ],
-    "match": {
+      },
       "executionMode": "parallel"
-    }
+    ]
   }
   ```
 
