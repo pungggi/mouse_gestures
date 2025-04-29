@@ -26,6 +26,7 @@ function activate(context) {
           localResourceRoots: [
             vscode.Uri.joinPath(context.extensionUri, "webview"),
           ],
+          retainContextWhenHidden: true,
         }
       );
 

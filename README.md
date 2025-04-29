@@ -1,6 +1,6 @@
 # Mouse Gestures for VS Code
 
-Mouse gesture support for Visual Studio Code. Execute commands by performing mouse gestures in the gesture pad.
+The first extension with enhanced mouse gesture support for Visual Studio Code. Execute commands by performing mouse gestures in the gesture pad.
 
 ## Features
 
