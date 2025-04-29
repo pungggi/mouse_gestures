@@ -1,4 +1,8 @@
 // JavaScript for Mouse Gestures Cheat Sheet Webview
+
+// Initialize VS Code API once
+const vscode = acquireVsCodeApi();
+
 function renderGestures(gestures) {
   const container = document.getElementById("gesture-list");
   if (!container) {
@@ -118,6 +122,16 @@ function renderGestures(gestures) {
 
     card.appendChild(commandContainer);
 
+    // Add click event listener to navigate to gesture definition
+    card.addEventListener("click", () => {
+      const messagePayload = {
+        command: "navigateToGesture",
+        gestureId: gestureConfig.gesture,
+      };
+      vscode.postMessage(messagePayload);
+    });
+    card.style.cursor = "pointer";
+
     // Add card to grid
     grid.appendChild(card);
   });
@@ -227,6 +241,3 @@ window.addEventListener("message", (event) => {
     console.error("Error handling message:", error);
   }
 });
-
-// Log when script loads to help with debugging
-console.log("Cheat Sheet script loaded");

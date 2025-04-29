@@ -4,6 +4,9 @@ const vscode = require("vscode");
 function activate(context) {
   // context here is ExtensionContext
 
+  // Store panel reference for singleton pattern
+  let cheatSheetPanel = undefined;
+
   // Pass the extension's subscriptions array to the provider
   const provider = new GesturePadViewProvider(
     context.extensionUri,
@@ -17,7 +20,14 @@ function activate(context) {
       provider
     ),
     vscode.commands.registerCommand("mouseGestures.cheatSheet", () => {
-      const panel = vscode.window.createWebviewPanel(
+      // Check if panel exists and isn't disposed
+      if (cheatSheetPanel) {
+        cheatSheetPanel.reveal(vscode.ViewColumn.One);
+        return;
+      }
+
+      // Create new panel if it doesn't exist
+      cheatSheetPanel = vscode.window.createWebviewPanel(
         "mouseGesturesCheatSheet",
         "Mouse Gestures Cheat Sheet",
         vscode.ViewColumn.One,
@@ -36,45 +46,106 @@ function activate(context) {
         "webview",
         "cheatSheet.js"
       );
-      const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+      const scriptUri = cheatSheetPanel.webview.asWebviewUri(scriptPathOnDisk);
 
       // Generate nonce for CSP
       const nonce = getNonce();
 
-      panel.webview.html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
-    <title>Mouse Gestures Cheat Sheet</title>
-    <style>
-        body { padding: 20px; font-family: system-ui; }
-        .gesture-row { display: flex; align-items: center; margin: 10px 0; padding: 10px; border-bottom: 1px solid #ccc; }
-        .command-id { min-width: 200px; margin-right: 20px; }
-        svg { background: #f5f5f5; border-radius: 4px; }
-        svg line { stroke: var(--vscode-editor-foreground); }
-        svg polygon { fill: var(--vscode-editor-foreground); }
-    </style>
-</head>
-<body>
-    <div id="gesture-list"></div>
-    <script nonce="${nonce}" src="${scriptUri}"></script>
-</body>
-</html>`;
+      cheatSheetPanel.webview.html = /*html*/ `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline';">
+          <title>Mouse Gestures Cheat Sheet</title>
+          <style>
+              body { padding: 20px; font-family: system-ui; }
+              .gesture-row { display: flex; align-items: center; margin: 10px 0; padding: 10px; border-bottom: 1px solid #ccc; }
+              .command-id { min-width: 200px; margin-right: 20px; }
+              svg { background: #f5f5f5; border-radius: 4px; }
+              svg line { stroke: var(--vscode-editor-foreground); }
+              svg polygon { fill: var(--vscode-editor-foreground); }
+          </style>
+      </head>
+      <body>
+          <div id="gesture-list"></div>
+          <script nonce="${nonce}" src="${scriptUri}"></script>
+      </body>
+      </html>`;
 
       const gestureCommands =
         vscode.workspace
           .getConfiguration("mouseGestures")
           .get("gestureCommands") || [];
-      panel.webview.postMessage({
+      cheatSheetPanel.webview.postMessage({
         command: "loadGestures",
         data: gestureCommands,
       });
 
-      panel.onDidDispose(
+      cheatSheetPanel.webview.onDidReceiveMessage(
+        async (message) => {
+          let settingsJsonFound = false;
+          switch (message.command) {
+            case "navigateToGesture":
+              // Check if settings.json is already open in any visible editor and focus it
+              for (const editor of vscode.window.visibleTextEditors) {
+                if (
+                  editor.document.uri.fsPath.endsWith("settings.json") ||
+                  editor.document.fileName.endsWith("settings.json")
+                ) {
+                  settingsJsonFound = true;
+                  await vscode.window.showTextDocument(editor.document, {
+                    viewColumn: editor.viewColumn,
+                    preserveFocus: false,
+                  });
+                  break;
+                }
+              }
+              // If no editor is found, open settings.json
+              if (!settingsJsonFound) {
+                await vscode.commands.executeCommand(
+                  "workbench.action.openSettingsJson",
+                  {
+                    openToSide: true,
+                    revealSetting: {
+                      key: "mouseGestures.gestureCommands",
+                      edit: false,
+                    },
+                  }
+                );
+              }
+
+              // Start the find action with our search text
+              await vscode.commands.executeCommand("actions.find");
+
+              // Set the search text in the find widget
+              await vscode.commands.executeCommand(
+                "editor.actions.findWithArgs",
+                {
+                  searchString: `"${message.gestureId}"`,
+                  isRegex: false,
+                  matchCase: false,
+                  matchWholeWord: true,
+                  preserveCase: false,
+                }
+              );
+
+              // Jump to the next match
+              await vscode.commands.executeCommand(
+                "editor.action.nextMatchFindAction"
+              );
+
+              return;
+          }
+        },
+        undefined,
+        context.subscriptions
+      );
+
+      cheatSheetPanel.onDidDispose(
         () => {
-          // Cleanup if necessary
+          // Reset panel reference when disposed
+          cheatSheetPanel = undefined;
         },
         null,
         context.subscriptions

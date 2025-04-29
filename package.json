@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
