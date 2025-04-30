@@ -325,12 +325,6 @@ class GesturePadViewProvider {
     const exactMatch = commands.find((gc) => gc.gesture === gesture);
     if (exactMatch) return exactMatch;
 
-    // Try prefix match
-    const prefixMatch = commands.find(
-      (gc) => gc.matchType === "prefix" && gesture.startsWith(gc.gesture)
-    );
-    if (prefixMatch) return prefixMatch;
-
     // Try pattern match last (most expensive)
     if (enablePatternMatching) {
       return this._findPatternMatch(gesture, commands);

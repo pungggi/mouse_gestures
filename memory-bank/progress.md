@@ -65,7 +65,6 @@
 - **Status:** Implemented
 - **Description:** Enhanced the gesture matching logic in the `_handleGesture` method of `src/extension.js` to support:
   - Exact matching (primary approach)
-  - Prefix matching (finds commands where gesture.startsWith(gc.gesture) is true)
   - Pattern matching (when enablePatternMatching is true)
 - **Implementation Details:**
   - Added \_findPatternMatch method for pattern-based matching
@@ -98,7 +97,7 @@
   - **Direction Detection:** Uses angle-based detection (via `Math.atan2`) for accurate direction changes, with configurable thresholds for minimum distance and velocity to filter out noise.
   - **Noise Filtering:** Only significant, intentional direction changes are registered, reducing false positives.
   - **Message Passing:** The full gesture sequence is sent from the webview to the extension host using `vscode.postMessage`.
-  - **Flexible Matching:** The extension (`src/extension.js`) supports exact, prefix, and pattern-based matching (when enabled) to map gesture sequences to commands.
+  - **Flexible Matching:** The extension (`src/extension.js`) supports exact and pattern-based matching (when enabled) to map gesture sequences to commands.
   - **Configuration:** Users can define complex gesture-to-command mappings in the `mouseGestures.gestureCommands` setting, and adjust thresholds for gesture recognition.
 
 - **Design Decisions:**

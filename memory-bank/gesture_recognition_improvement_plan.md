@@ -8,7 +8,7 @@ The complex gesture recognition feature has been successfully implemented, with 
 
 ✅ **Configurable Thresholds**: Added user-configurable settings for gesture recognition sensitivity.
 
-✅ **Enhanced Gesture Matching**: Implemented flexible matching strategies (exact, prefix, pattern-based).
+✅ **Enhanced Gesture Matching**: Implemented flexible matching strategies (exact, pattern-based).
 
 ✅ **Error Handling and Logging**: Added comprehensive error handling and improved logging.
 
@@ -180,11 +180,6 @@ _findMatchingGestureCommand(gesture, gestureCommands) {
 
   // If no exact match and pattern matching is enabled, try other strategies
   if (!match && vscode.workspace.getConfiguration("mouseGestures").get("enablePatternMatching")) {
-    // Try prefix matching (e.g., "LR" would match "LRU")
-    match = gestureCommands.find((gc) =>
-      gesture.startsWith(gc.gesture) && gc.matchType === "prefix"
-    );
-
     // Try suffix matching (e.g., "RU" would match "LRU")
     if (!match) {
       match = gestureCommands.find((gc) =>
@@ -587,7 +582,6 @@ Update the README.md to include information about complex gesture sequences:
 
 - `matchType`: How to match the gesture (optional)
   - `"exact"`: Exact match (default)
-  - `"prefix"`: Match if the gesture starts with this pattern
   - `"suffix"`: Match if the gesture ends with this pattern
   - `"contains"`: Match if the gesture contains this pattern
 ```

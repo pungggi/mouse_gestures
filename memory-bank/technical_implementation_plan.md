@@ -12,10 +12,9 @@ The complex gesture pattern recognition feature has been successfully implemente
 
    - Added `_findPatternMatch` method to support pattern-based gesture matching
    - Added robust error handling with try/catch blocks
-   - Enhanced gesture matching with three-step approach:
+   - Enhanced gesture matching with two-step approach:
      1. Exact match
-     2. Prefix match
-     3. Pattern match (when enabled)
+     2. Pattern match (when enabled)
 
 3. **Configurable Thresholds**: Added user-configurable settings for gesture recognition sensitivity:
 
@@ -65,10 +64,9 @@ The complex gesture pattern recognition feature has been successfully implemente
 
 - Added \_findPatternMatch method to support pattern-based gesture matching
 - Added robust error handling with try/catch blocks
-- Enhanced gesture matching with three-step approach:
+- Enhanced gesture matching with two-step approach:
   1. Exact match
-  2. Prefix match
-  3. Pattern match (when enabled)
+  2. Pattern match (when enabled)
 
 **Resolution:** The issue has been fixed by updating `extension.js` to correctly use `details.sequence` instead of `details.direction` for gesture processing.
 
@@ -157,13 +155,6 @@ const gestureCommands = this._getGestureCommands();
 
 // Try exact match first
 let match = gestureCommands.find((gc) => gc.gesture === gesture);
-
-// If no exact match, try prefix matching (e.g., "LR" would match "LRU")
-if (!match) {
-  match = gestureCommands.find(
-    (gc) => gesture.startsWith(gc.gesture) && gc.matchType === "prefix"
-  );
-}
 
 // If still no match, try pattern matching if enabled
 if (!match && this._config.enablePatternMatching) {
@@ -330,7 +321,7 @@ async _handleGesture(details) {
 
 2. ✓ **Add Configuration Options (Completed April 16, 2025)**: Added settings for gesture recognition thresholds and updated the extension to send these to the webview.
 
-3. ✓ **Enhance Gesture Matching (Completed April 16, 2025)**: Implemented more flexible matching strategies for gesture sequences, including exact matching, prefix matching, and pattern matching support.
+3. ✓ **Enhance Gesture Matching (Completed April 16, 2025)**: Implemented more flexible matching strategies for gesture sequences, including exact matching and pattern matching support.
 
 4. **Add Diagonal Support**: Update the angle-based detection to support diagonal directions.
 
