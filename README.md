@@ -29,9 +29,9 @@ The first extension with enhanced mouse gesture support for Visual Studio Code. 
       {
         "command": "git.closeAllDiffEditors",
         "description": ""
-      },
-      "executionMode": "parallel"
-    ]
+      }
+    ],
+    "executionMode": "parallel"
   }
   ```
 
@@ -157,7 +157,6 @@ Some examples:
 - `matchType`: The type of matching to use for the gesture (optional)
 
   - `"exact"`: Match the exact gesture string (default)
-  - `"prefix"`: Match if the performed gesture starts with the specified pattern
   - `"pattern"`: Use regular expression pattern matching for complex gestures
 
 - `executionMode`: How to execute multiple commands (optional)
@@ -292,6 +291,8 @@ Performance considerations:
 - The system uses a three-step matching process (exact, prefix, pattern) for efficiency
 
 ### Troubleshooting
+
+A test webpage is available locally in the `dist` folder (./dist/test_gesture_recognition.html).
 
 Common issues with complex gesture patterns and how to resolve them:
 
