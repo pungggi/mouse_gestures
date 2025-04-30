@@ -288,7 +288,6 @@ Performance considerations:
 
 - Complex regex patterns may impact performance if overused
 - Patterns are compiled and cached for better performance
-- The system uses a three-step matching process (exact, prefix, pattern) for efficiency
 
 ### Troubleshooting
 
