@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://blog-hajufsiq6-alexs-projects-9de531f5.vercel.app/sitemap.xml

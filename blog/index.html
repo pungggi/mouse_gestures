@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      Mouse Gestures for VS Code - Boost Your Productivity with Gesture Commands
+    </title>
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="Enhance your VS Code workflow with mouse gesture commands. Execute common actions quickly, configure custom gestures, and boost your coding productivity."
+    />
+    <meta
+      name="keywords"
+      content="VS Code extension, mouse gestures, productivity tools, code editor, Visual Studio Code, developer tools, gesture commands, workflow automation"
+    />
+    <meta name="author" content="ngSoftware" />
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta
+      property="og:title"
+      content="Mouse Gestures for VS Code - Boost Your Productivity"
+    />
+    <meta
+      property="og:description"
+      content="Enhance your VS Code workflow with mouse gesture commands. Execute common actions quickly and boost your coding productivity."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="images/features.gif" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Mouse Gestures for VS Code" />
+    <meta
+      name="twitter:description"
+      content="Enhance your VS Code workflow with mouse gesture commands."
+    />
+    <meta name="twitter:image" content="images/features.gif" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://mouse-gestures.vercel.app" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Mouse Gestures for VS Code",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "description": "A VS Code extension that adds mouse gesture support for executing commands quickly and efficiently.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "author": {
+          "@type": "Organization",
+          "name": "ngSoftware"
+        }
+      }
+    </script>
+
+    <link rel="stylesheet" href="style.css" />
+    <!-- Prism.js for syntax highlighting -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Unlock VS Code Power with Mouse Gestures</h1>
+    </header>
+    <main>
+      <section id="introduction">
+        <h2>Introduction</h2>
+        <p>
+          The "Mouse Gestures for VS Code" extension is the first of its kind,
+          offering enhanced mouse gesture support for Visual Studio Code. With
+          this extension, you can execute commands by performing mouse gestures
+          in a dedicated gesture pad.
+          <a
+            href="https://marketplace.visualstudio.com/items/?itemName=ngSoftware.mouse-gestures"
+            target="_blank"
+            >Get the extension from VS Code Marketplace</a
+          >.
+        </p>
+      </section>
+      <section id="user-story">
+        <h2>User Story: Streamlining Development Workflow</h2>
+        <p>
+          Meet Sarah, a full-stack developer who works on multiple projects
+          simultaneously in VS Code. She often needs to switch between editors,
+          save files, and commit changes to Git. Before discovering the Mouse
+          Gestures extension, Sarah relied heavily on keyboard shortcuts and
+          menu navigation, which slowed her down due to frequent hand movements
+          between keyboard and mouse.
+        </p>
+        <p>
+          After installing the Mouse Gestures extension, Sarah configured a few
+          custom gestures to match her workflow:
+        </p>
+        <ul>
+          <li>
+            <strong>Gesture "R" (Right)</strong>: Switch to the next editor,
+            allowing her to quickly navigate between open files.
+          </li>
+          <li>
+            <strong>Gesture "DR" (Down-Right)</strong>: Save the current file
+            and close the editor, streamlining her process of finalizing
+            changes.
+          </li>
+          <li>
+            <strong>Gesture "DURDRU"</strong>: Commit staged files and close all
+            diff editors in parallel, making Git commits a breeze.
+          </li>
+        </ul>
+        <p>
+          With these gestures, Sarah now performs common actions in seconds
+          without lifting her hand from the mouse. What used to take multiple
+          keyboard shortcuts or menu clicks now happens with a flick of the
+          wrist in the gesture pad. She estimates saving at least 10-15 minutes
+          per day on repetitive tasks, allowing her to focus more on coding and
+          less on navigation.
+        </p>
+        <p>
+          This extension has transformed Sarah's workflow, making her more
+          efficient and reducing physical strain from constant keyboard-mouse
+          switching. Whether you're a developer, designer, or power user, Mouse
+          Gestures can adapt to your needs and save you valuable time.
+        </p>
+      </section>
+      <section id="features">
+        <h2>Features</h2>
+        <ul>
+          <li>Execute VS Code commands using mouse gestures</li>
+          <li>Configure custom gesture-to-command mappings</li>
+          <li>Support for sequential and parallel command execution</li>
+          <li>Support for waiting on command completion</li>
+          <li>Built-in gesture pad for gesture detection</li>
+          <li>
+            Support for complex gesture patterns using regular expressions
+          </li>
+          <li>
+            Full 8-direction support including diagonal movements (UR, UL, DR,
+            DL)
+          </li>
+          <li>Assign commands to unrecognized gestures with a simple prompt</li>
+          <li>
+            View all configured gestures with the "Mouse Gestures: Show Cheat
+            Sheet" command
+          </li>
+        </ul>
+        <img src="images/features.gif" alt="Gesture Pad Interface" />
+      </section>
+      <section id="how-it-works">
+        <h2>How It Works</h2>
+        <p>
+          The extension provides a gesture pad view in the activity bar where
+          you can perform mouse gestures. When a gesture is detected, it
+          executes the corresponding command(s) based on your configuration.
+        </p>
+        <ol>
+          <li>
+            Click and hold the right or left mouse button in the gesture pad
+          </li>
+          <li>
+            Move the mouse to draw your gesture (e.g., move right for "R"
+            gesture, down-right for "DR" gesture)
+          </li>
+          <li>Release the mouse button to execute the configured command(s)</li>
+        </ol>
+      </section>
+      <section id="default-gestures">
+        <h2>Default Gesture Mappings</h2>
+        <ul>
+          <li><code>R</code> (Right): Switch to next editor</li>
+          <li><code>L</code> (Left): Switch to previous editor</li>
+        </ul>
+        <p>
+          You can override these defaults or add new gestures by configuring
+          <code>mouseGestures.gestureCommands</code> in your settings. The
+          extension supports both cardinal directions (R, L, U, D) and diagonal
+          directions (UR, UL, DR, DL).
+        </p>
+      </section>
+      <section id="cheat-sheet">
+        <h2>Viewing Configured Gestures</h2>
+        <p>
+          Use the "Mouse Gestures: Show Cheat Sheet" command from the command
+          palette (Ctrl+Shift+P) to view all configured gestures in a visually
+          organized cheat sheet. The cheat sheet displays:
+        </p>
+        <ul>
+          <li>Gesture patterns with visual representations</li>
+          <li>Associated commands or descriptions</li>
+          <li>
+            Clear distinction between parallel (→) and sequential (1. 2. 3. )
+            command execution
+          </li>
+        </ul>
+        <img src="images/cheat-sheet.png" alt="Gesture Cheat Sheet" />
+      </section>
+      <section id="configuration">
+        <h2>Configuration</h2>
+        <p>Here are some configuration examples:</p>
+        <pre><code class="language-json">
+"mouseGestures.gestureCommands": [
+  {
+    // Simple gesture that executes a single command
+    "gesture": "R",
+    "actions": [
+      {
+        "command": "workbench.action.nextEditor",
+        "description": "Switch to next editor"
+      }
+    ]
+  },
+  {
+    // Complex gesture with multiple sequential commands
+    "gesture": "DR",
+    "executionMode": "sequential",
+    "actions": [
+      {
+        "command": "workbench.action.files.save",
+        "description": "Save current file"
+      },
+      {
+        "command": "workbench.action.closeActiveEditor",
+        "description": "Close current editor"
+      }
+    ]
+  },
+  {
+    // Gesture with parallel command execution
+    "gesture": "UL",
+    "executionMode": "parallel",
+    "actions": [
+      {
+        "command": "workbench.action.files.save",
+        "description": "Save all files"
+      },
+      {
+        "command": "workbench.action.files.saveAll",
+        "description": "Save all files"
+      }
+    ]
+  },
+  {
+    // Complex pattern using regex
+    "gesture": "^LRUDLR$",
+    "matchType": "pattern",
+    "actions": [
+      {
+        "command": "workbench.action.toggleSidebarVisibility",
+        "description": "Toggle sidebar visibility"
+      }
+    ]
+  },
+  {
+    // Using args
+    "gesture": "U",
+    "matchType": "exact",
+    "executionMode": "sequential",
+    "actions": [
+        {
+            "command": "workbench.action.terminal.newWithCwd",
+            "description": ""
+        },
+        {
+            "command": "workbench.action.terminal.sendSequence",
+            "description": "Open app.json",
+            "args": [
+                {
+                    "text": "code app.json\r"
+                }
+            ],
+            "waitSeconds": 1
+        },
+        {
+            "command": "workbench.action.terminal.kill",
+            "description": ""
+        }
+    ]
+  }
+]
+            </code></pre>
+        <h3>Configuration Options</h3>
+        <ul>
+          <li>
+            <code>gesture</code>: The gesture string to match. Possible values:
+            <ul>
+              <li>
+                Single directions: "R" (right), "L" (left), "U" (up), "D" (down)
+              </li>
+              <li>
+                Diagonal combinations: "UR" (up-right), "UL" (up-left), "DR"
+                (down-right), "DL" (down-left)
+              </li>
+              <li>
+                Complex patterns: Regular expressions for matching complex
+                gesture sequences (requires <code>matchType: "pattern"</code>)
+              </li>
+            </ul>
+          </li>
+          <li>
+            <code>matchType</code>: The type of matching to use for the gesture
+            (optional)
+            <ul>
+              <li>
+                <code>"exact"</code>: Match the exact gesture string (default)
+              </li>
+              <li>
+                <code>"pattern"</code>: Use regular expression pattern matching
+                for complex gestures
+              </li>
+            </ul>
+          </li>
+          <li>
+            <code>executionMode</code>: How to execute multiple commands
+            (optional)
+            <ul>
+              <li>
+                <code>"sequential"</code>: Execute commands one after another
+                (default)
+              </li>
+              <li>
+                <code>"parallel"</code>: Execute all commands simultaneously
+              </li>
+            </ul>
+          </li>
+          <li>
+            <code>actions</code>: Array of command objects, each containing:
+            <ul>
+              <li>
+                <code>command</code>: The VS Code command ID to execute
+                (required)
+              </li>
+              <li>
+                <code>description</code>: Optional description of what the
+                command does
+              </li>
+              <li>
+                <code>waitSeconds</code>: Number of seconds to wait before
+                executing the next command (only applies in sequential mode,
+                must be a positive integer)
+              </li>
+              <li>
+                <code>args</code>: Optional array of arguments to pass to the
+                command
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+      <section id="complex-patterns">
+        <h2>Complex Gesture Patterns</h2>
+        <p>
+          The extension supports complex gesture patterns through regular
+          expression matching, allowing for more expressive and powerful gesture
+          definitions beyond simple directional gestures.
+        </p>
+        <h3>Overview</h3>
+        <p>Complex gesture patterns enable you to:</p>
+        <ul>
+          <li>Define gestures that match specific sequences of directions</li>
+          <li>
+            Create patterns with repetitions, alternatives, and other regex
+            features
+          </li>
+          <li>
+            Design custom, memorable gestures for frequently used commands
+          </li>
+          <li>Implement application-specific gesture workflows</li>
+        </ul>
+        <h3>How to Define Complex Patterns</h3>
+        <p>To define a complex gesture pattern:</p>
+        <ol>
+          <li>
+            Set the <code>gesture</code> property to a regular expression
+            pattern
+          </li>
+          <li>
+            Set the <code>matchType</code> property to <code>"pattern"</code>
+          </li>
+          <li>
+            Ensure the <code>mouseGestures.enablePatternMatching</code> setting
+            is enabled (true by default)
+          </li>
+        </ol>
+        <p>Example configuration:</p>
+        <pre><code class="language-json">
+{
+  "gesture": "^L(RU)+D$",
+  "matchType": "pattern",
+  "actions": [
+    {
+      "command": "workbench.action.files.saveAll",
+      "description": "Save all files"
+    }
+  ]
+}
+            </code></pre>
+        <h3>Examples</h3>
+        <p>Here are some examples of complex gesture patterns:</p>
+        <ol>
+          <li>
+            <strong>Exact Sequence</strong>: <code>^LRUDLR$</code>
+            <ul>
+              <li>
+                Matches the exact sequence Left, Right, Up, Down, Left, Right
+              </li>
+              <li>Useful for specific, memorable patterns</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Repeated Pattern</strong>: <code>^L(RU)+D$</code>
+            <ul>
+              <li>
+                Matches Left, followed by one or more Right-Up combinations,
+                ending with Down
+              </li>
+              <li>Example matches: LRUD, LRURUD, LRURURUD</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Alternative Directions</strong>: <code>^L(R|U)D$</code>
+            <ul>
+              <li>
+                Matches Left, followed by either Right or Up, ending with Down
+              </li>
+              <li>Example matches: LRD, LUD</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Optional Directions</strong>: <code>^LR?UD$</code>
+            <ul>
+              <li>
+                Matches Left, optionally followed by Right, then Up and Down
+              </li>
+              <li>Example matches: LUD, LRUD</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Counting Repetitions</strong>: <code>^L(RU){2,3}D$</code>
+            <ul>
+              <li>
+                Matches Left, followed by 2-3 repetitions of Right-Up, ending
+                with Down
+              </li>
+              <li>Example matches: LRURUD, LRURURUD</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Z-shaped Gesture</strong>: <code>^RDLR$</code>
+            <ul>
+              <li>
+                Creates a Z-shaped pattern: Right, then Down-Left (diagonal),
+                then Right
+              </li>
+              <li>
+                Visually intuitive for actions like "clear all" or "reset view"
+              </li>
+            </ul>
+          </li>
+        </ol>
+        <h3>Best Practices</h3>
+        <p>For creating reliable and memorable complex gesture patterns:</p>
+        <ol>
+          <li>
+            <strong>Keep patterns simple</strong>
+            <ul>
+              <li>Shorter patterns are easier to remember and execute</li>
+              <li>
+                Limit the use of complex regex features for better usability
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Use anchors</strong>
+            <ul>
+              <li>
+                Start patterns with <code>^</code> and end with
+                <code>$</code> to match the entire gesture
+              </li>
+              <li>This prevents unintended partial matches</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Create meaningful patterns</strong>
+            <ul>
+              <li>
+                Design patterns that visually represent the action they perform
+              </li>
+              <li>For example, a Z-shaped gesture (RULD) for "clear all"</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Test thoroughly</strong>
+            <ul>
+              <li>
+                Verify your patterns work as expected before relying on them
+              </li>
+              <li>Consider the physical ergonomics of executing the gesture</li>
+            </ul>
+          </li>
+          <li>
+            <strong>Avoid conflicts</strong>
+            <ul>
+              <li>
+                Ensure complex patterns don't conflict with simpler gestures
+              </li>
+              <li>
+                Be careful with patterns that might match as prefixes of other
+                patterns
+              </li>
+            </ul>
+          </li>
+        </ol>
+        <h3>Technical Details</h3>
+        <p>
+          The extension implements
+          <a
+            href="https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm"
+            >Douglas-Peucker path simplification algorithm</a
+          >
+          and regex pattern matching with the following approach:
+        </p>
+        <ul>
+          <li>Raw mouse movements are captured as coordinate points</li>
+          <li>
+            The Douglas-Peucker algorithm simplifies the path by removing
+            redundant points
+          </li>
+          <li>
+            The simplified path is converted to a sequence of directional
+            movements (R, L, U, D, UR, UL, DR, DL)
+          </li>
+          <li>
+            For pattern-based gestures, this sequence is matched against
+            configured regex patterns
+          </li>
+        </ul>
+        <ol>
+          <li>
+            When a gesture is performed, the system captures the sequence of
+            directions (e.g., "LRUDLR")
+          </li>
+          <li>
+            If pattern matching is enabled, the system checks each pattern-type
+            gesture configuration
+          </li>
+          <li>
+            The gesture string is tested against each regex pattern using
+            JavaScript's <code>RegExp.test()</code>
+          </li>
+          <li>The first matching pattern's commands are executed</li>
+        </ol>
+        <p>Performance considerations:</p>
+        <ul>
+          <li>Complex regex patterns may impact performance if overused</li>
+          <li>Patterns are compiled and cached for better performance</li>
+        </ul>
+      </section>
+      <section id="troubleshooting">
+        <h2>Troubleshooting</h2>
+        <p>
+          A test webpage is available locally in the <code>dist</code> folder
+          (./dist/test_gesture_recognition.html).
+        </p>
+        <p>
+          Common issues with complex gesture patterns and how to resolve them:
+        </p>
+        <ol>
+          <li>
+            <strong>Pattern Not Matching</strong>
+            <ul>
+              <li>
+                <strong>Issue</strong>: Your complex pattern isn't being
+                recognized
+              </li>
+              <li>
+                <strong>Solution</strong>:
+                <ul>
+                  <li>
+                    Verify <code>mouseGestures.enablePatternMatching</code> is
+                    set to true
+                  </li>
+                  <li>
+                    Check that <code>matchType</code> is set to
+                    <code>"pattern"</code>
+                  </li>
+                  <li>Test your regex pattern in a regex tester</li>
+                  <li>Simplify the pattern and gradually add complexity</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Inconsistent Recognition</strong>
+            <ul>
+              <li>
+                <strong>Issue</strong>: The pattern works sometimes but not
+                always
+              </li>
+              <li>
+                <strong>Solution</strong>:
+                <ul>
+                  <li>
+                    Make your gestures more distinct with clearer direction
+                    changes
+                  </li>
+                  <li>Draw gestures with deliberate, clear movements</li>
+                  <li>
+                    Consider using simpler patterns with fewer direction changes
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Wrong Command Executing</strong>
+            <ul>
+              <li>
+                <strong>Issue</strong>: A different command executes than the
+                one you expected
+              </li>
+              <li>
+                <strong>Solution</strong>:
+                <ul>
+                  <li>
+                    Check for conflicting patterns that might match the same
+                    gesture
+                  </li>
+                  <li>
+                    Use anchors (<code>^</code> and <code>$</code>) to ensure
+                    exact matching
+                  </li>
+                  <li>Review the order of your gesture configurations</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Performance Issues</strong>
+            <ul>
+              <li>
+                <strong>Issue</strong>: Noticeable lag when using complex
+                patterns
+              </li>
+              <li>
+                <strong>Solution</strong>:
+                <ul>
+                  <li>Reduce the number of complex patterns</li>
+                  <li>
+                    Simplify regex patterns by avoiding excessive use of
+                    lookaheads/lookbehinds
+                  </li>
+                  <li>Make gestures more deliberate and distinct</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+          <li>
+            <strong>Regex Syntax Errors</strong>
+            <ul>
+              <li>
+                <strong>Issue</strong>: Pattern not working due to invalid regex
+                syntax
+              </li>
+              <li>
+                <strong>Solution</strong>:
+                <ul>
+                  <li>Check the browser console for error messages</li>
+                  <li>Validate your regex using an online regex tester</li>
+                  <li>Review JavaScript RegExp syntax documentation</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ol>
+      </section>
+    </main>
+    <footer>
+      <p>
+        Learn more about Mouse Gestures for VS Code on
+        <a href="https://github.com/pungggi/mouse_gestures">GitHub</a> or
+        <a
+          href="https://marketplace.visualstudio.com/items/?itemName=ngSoftware.mouse-gestures"
+          target="_blank"
+          >download it from VS Code Marketplace</a
+        >.
+      </p>
+    </footer>
+    <script src="script.js"></script>
+    <!-- Prism.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-json.min.js"></script>
+  </body>
+</html>
