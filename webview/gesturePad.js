@@ -121,14 +121,40 @@ window.addEventListener("mousemove", (e) => {
 });
 
 // Function to find matching gesture command and get all action descriptions
-function findGestureDescriptions(sequence) {
-  // Find exact match first
-  const match = gestureCommands.find((cmd) => cmd.gesture === sequence);
-  if (match && match.actions && match.actions.length > 0) {
+function findGestureDescriptions(sequence, inputType) {
+  // Find exact match first with specific inputType
+  const exactSpecificMatch = gestureCommands.find(
+    (cmd) => cmd.gesture === sequence && cmd.inputType === inputType
+  );
+  if (
+    exactSpecificMatch &&
+    exactSpecificMatch.actions &&
+    exactSpecificMatch.actions.length > 0
+  ) {
     // Return all action descriptions
     return {
       gesture: sequence,
-      descriptions: match.actions.map((action) => ({
+      descriptions: exactSpecificMatch.actions.map((action) => ({
+        command: action.command,
+        description: action.description || "",
+      })),
+    };
+  }
+
+  // Then try exact match with 'any' or unspecified inputType
+  const exactAnyMatch = gestureCommands.find(
+    (cmd) =>
+      cmd.gesture === sequence && (cmd.inputType === "any" || !cmd.inputType)
+  );
+  if (
+    exactAnyMatch &&
+    exactAnyMatch.actions &&
+    exactAnyMatch.actions.length > 0
+  ) {
+    // Return all action descriptions
+    return {
+      gesture: sequence,
+      descriptions: exactAnyMatch.actions.map((action) => ({
         command: action.command,
         description: action.description || "",
       })),
@@ -146,27 +172,55 @@ function findGestureDescriptions(sequence) {
     `Testing ${sequence} against ${patternCommands.length} pattern commands`
   );
 
-  // Test each pattern against the sequence
+  // First, try pattern matches with specific inputType
   for (const cmd of patternCommands) {
-    try {
-      console.log(`Testing pattern: ${cmd.gesture}`);
-      // Create a RegExp object from the gesture pattern
-      const regex = new RegExp(cmd.gesture);
+    if (cmd.inputType === inputType) {
+      try {
+        console.log(`Testing pattern: ${cmd.gesture}`);
+        // Create a RegExp object from the gesture pattern
+        const regex = new RegExp(cmd.gesture);
 
-      // Test if the sequence matches the pattern
-      if (regex.test(sequence)) {
-        console.log(`Match found for pattern: ${cmd.gesture}`);
-        return {
-          gesture: sequence,
-          descriptions: cmd.actions.map((action) => ({
-            command: action.command,
-            description: action.description || "",
-          })),
-        };
+        // Test if the sequence matches the pattern
+        if (regex.test(sequence)) {
+          console.log(`Match found for pattern: ${cmd.gesture}`);
+          return {
+            gesture: sequence,
+            descriptions: cmd.actions.map((action) => ({
+              command: action.command,
+              description: action.description || "",
+            })),
+          };
+        }
+      } catch (error) {
+        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
+        // Continue to the next pattern if this one is invalid
       }
-    } catch (error) {
-      console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-      // Continue to the next pattern if this one is invalid
+    }
+  }
+
+  // Then, try pattern matches with 'any' or unspecified inputType
+  for (const cmd of patternCommands) {
+    if (cmd.inputType === "any" || !cmd.inputType) {
+      try {
+        console.log(`Testing pattern: ${cmd.gesture}`);
+        // Create a RegExp object from the gesture pattern
+        const regex = new RegExp(cmd.gesture);
+
+        // Test if the sequence matches the pattern
+        if (regex.test(sequence)) {
+          console.log(`Match found for pattern: ${cmd.gesture}`);
+          return {
+            gesture: sequence,
+            descriptions: cmd.actions.map((action) => ({
+              command: action.command,
+              description: action.description || "",
+            })),
+          };
+        }
+      } catch (error) {
+        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
+        // Continue to the next pattern if this one is invalid
+      }
     }
   }
 
@@ -248,7 +302,10 @@ window.addEventListener("mouseup", () => {
 
       // 3. Show preview and send to extension
       if (enableGesturePreview) {
-        const gestureInfo = findGestureDescriptions(normalizedSequence);
+        const gestureInfo = findGestureDescriptions(
+          normalizedSequence,
+          "mouse"
+        );
         showGesturePreview(gestureInfo);
       }
 
@@ -258,6 +315,7 @@ window.addEventListener("mouseup", () => {
         rawSequence: rawSequence,
         simplifiedPath: simplifiedPath,
         originalPath: gesturePath,
+        inputType: "mouse",
       });
     }
 
@@ -267,5 +325,46 @@ window.addEventListener("mouseup", () => {
   // Send a message to the extension indicating that the webview is ready
   vscode.postMessage({
     command: "webviewReady",
+  });
+  // --- Mouse wheel handler: detect scrolling direction ---
+  gestureArea.addEventListener("wheel", (e) => {
+    e.preventDefault(); // Prevent default scrolling behavior
+
+    // Determine direction based on delta values
+    let direction = "";
+
+    // Check deltaY for up/down
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      if (e.deltaY < 0) {
+        direction = "U"; // Up
+      } else if (e.deltaY > 0) {
+        direction = "D"; // Down
+      }
+    } else {
+      // Check deltaX for left/right
+      if (e.deltaX < 0) {
+        direction = "L"; // Left
+      } else if (e.deltaX > 0) {
+        direction = "R"; // Right
+      }
+    }
+
+    if (direction) {
+      // Show preview if enabled
+      if (enableGesturePreview) {
+        const gestureInfo = findGestureDescriptions(direction, "wheel");
+        showGesturePreview(gestureInfo);
+      }
+
+      // Send the wheel gesture to the extension
+      vscode.postMessage({
+        command: "gestureDetected",
+        sequence: direction,
+        rawSequence: direction,
+        simplifiedPath: [],
+        originalPath: [],
+        inputType: "wheel",
+      });
+    }
   });
 });

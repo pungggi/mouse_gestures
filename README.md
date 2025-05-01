@@ -159,6 +159,12 @@ Some examples:
   - `"exact"`: Match the exact gesture string (default)
   - `"pattern"`: Use regular expression pattern matching for complex gestures
 
+- `inputType`: Specifies the input method this gesture applies to (optional)
+
+  - `"mouse"`: Applies only to mouse drag gestures.
+  - `"wheel"`: Applies only to mouse wheel actions.
+  - `"any"`: Applies to both mouse drag and wheel actions (default).
+
 - `executionMode`: How to execute multiple commands (optional)
 
   - `"sequential"`: Execute commands one after another (default)

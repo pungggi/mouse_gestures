@@ -320,44 +320,81 @@ class GesturePadViewProvider {
   }
 
   // Helper method to find gesture matches with optimized matching strategy
-  _findGestureMatch(gesture, commands, enablePatternMatching) {
-    // Try exact match first (most common case)
-    const exactMatch = commands.find((gc) => gc.gesture === gesture);
-    if (exactMatch) return exactMatch;
+  _findGestureMatch(gesture, commands, enablePatternMatching, inputType) {
+    // Try exact match first with specific inputType (most specific)
+    const exactSpecificMatch = commands.find(
+      (gc) => gc.gesture === gesture && gc.inputType === inputType
+    );
+    if (exactSpecificMatch) return exactSpecificMatch;
+
+    // Then try exact match with 'any' or unspecified inputType
+    const exactAnyMatch = commands.find(
+      (gc) =>
+        gc.gesture === gesture && (gc.inputType === "any" || !gc.inputType)
+    );
+    if (exactAnyMatch) return exactAnyMatch;
 
     // Try pattern match last (most expensive)
     if (enablePatternMatching) {
-      return this._findPatternMatch(gesture, commands);
+      return this._findPatternMatch(gesture, commands, inputType);
     }
 
     return null;
   }
 
   // Optimized pattern matching with caching
-  _findPatternMatch(gesture, gestureCommands) {
+  _findPatternMatch(gesture, gestureCommands, inputType) {
     const patternCommands = gestureCommands.filter(
       (gc) => gc.matchType === "pattern"
     );
 
+    // First, try pattern matches with specific inputType
     for (const command of patternCommands) {
-      let regex = this._patternCache.get(command.gesture);
+      if (command.inputType === inputType) {
+        let regex = this._patternCache.get(command.gesture);
 
-      if (!regex) {
-        try {
-          // Use the gesture string as a regex directly (allowing complex patterns)
-          regex = new RegExp(command.gesture);
-          this._patternCache.set(command.gesture, regex);
-        } catch (e) {
-          console.error(
-            `Invalid regex pattern for gesture: ${command.gesture}`,
-            e
-          );
-          continue;
+        if (!regex) {
+          try {
+            // Use the gesture string as a regex directly (allowing complex patterns)
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture)) {
+          return command;
         }
       }
+    }
 
-      if (regex.test(gesture)) {
-        return command;
+    // Then, try pattern matches with 'any' or unspecified inputType
+    for (const command of patternCommands) {
+      if (command.inputType === "any" || !command.inputType) {
+        let regex = this._patternCache.get(command.gesture);
+
+        if (!regex) {
+          try {
+            // Use the gesture string as a regex directly (allowing complex patterns)
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture)) {
+          return command;
+        }
       }
     }
     return null;
@@ -390,10 +427,12 @@ class GesturePadViewProvider {
       const enablePatternMatching = config.get("enablePatternMatching");
 
       // Try to find a match regardless of whether the gesture is in GESTURE_MAP
+      const inputType = details.inputType || "mouse"; // Default to mouse if not specified
       const match = this._findGestureMatch(
         gesture,
         gestureCommands,
-        enablePatternMatching
+        enablePatternMatching,
+        inputType
       );
 
       if (!match) {

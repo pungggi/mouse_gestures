@@ -153,6 +153,10 @@
             View all configured gestures with the "Mouse Gestures: Show Cheat
             Sheet" command
           </li>
+          <li>
+            Support for mouse wheel events, allowing differentiation between
+            mouse drag and wheel gestures for distinct command mappings
+          </li>
         </ul>
         <img src="images/features.gif" alt="Gesture Pad Interface" />
       </section>
@@ -315,6 +319,20 @@
               </li>
               <li>
                 <code>"pattern"</code>: Use regular expression pattern matching
+<li>
+            <code>inputType</code>: Specifies the input method this gesture applies to (optional)
+            <ul>
+              <li>
+                <code>"mouse"</code>: Applies only to mouse drag gestures
+              </li>
+              <li>
+                <code>"wheel"</code>: Applies only to mouse wheel actions
+              </li>
+              <li>
+                <code>"any"</code>: Applies to both mouse drag and wheel actions (default)
+              </li>
+            </ul>
+          </li>
                 for complex gestures
               </li>
             </ul>

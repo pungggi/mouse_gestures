@@ -106,6 +106,16 @@
                 "type": "string",
                 "description": "The gesture string. Supports regular expressions for complex patterns (e.g., 'LRUDLR', '^L(RU)+D$'). For simple gestures, use 'R' (right), 'L' (left), 'U' (up), 'D' (down), or combinations like 'DR' (down-right). For advanced use, define a regex pattern to match complex gesture sequences."
               },
+              "inputType": {
+                "type": "string",
+                "enum": [
+                  "mouse",
+                  "wheel",
+                  "any"
+                ],
+                "default": "any",
+                "description": "Specifies the input type this gesture applies to: 'mouse' (drag), 'wheel', or 'any' (both)."
+              },
               "executionMode": {
                 "type": "string",
                 "enum": [

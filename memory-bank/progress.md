@@ -198,3 +198,21 @@
   - Used VS Code theme variables for consistent appearance and added hover effects for better interactivity.
 - **Files Modified:** `src/extension.js`, `webview/cheatSheet.js`, `README.md`
 - **Impact:** Greatly enhances user experience by providing an intuitive, visual reference for all configured gestures, reducing the learning curve and improving accessibility of custom mappings.
+
+---
+
+**Feature: Mouse Wheel Event Detection and Differentiation**
+
+- **Date:** 2025-05-01
+- **Status:** Implemented
+- **Description:** Added support for detecting mouse wheel events (up, down, left, right) and integrated them into the gesture recognition system. Introduced a new configuration property `inputType` to differentiate between mouse drag and wheel gestures, allowing users to assign different commands to each input type.
+- **Technical Approach:**
+  - Added 'wheel' event listeners in `webview/gesturePad.js` to capture directional scrolling data.
+  - Updated gesture messages to include an `inputType` field ("mouse" or "wheel").
+  - Modified `src/extension.js` to match gestures against commands considering the `inputType`, supporting "mouse", "wheel", or "any" in the configuration.
+  - Updated `package.json` to include the `inputType` property in the `mouseGestures.gestureCommands` schema.
+- **Implementation Details:**
+  - Wheel event delta values are interpreted for direction, prioritizing the axis with the larger delta.
+  - Configuration allows specifying input type per gesture mapping, defaulting to "any" for backward compatibility.
+- **Files Modified:** `package.json`, `webview/gesturePad.js`, `src/extension.js`, `README.md`
+- **Impact:** Enhances user interaction by supporting mouse wheel inputs as distinct gestures, allowing for more versatile command mappings without affecting existing mouse drag functionality.
