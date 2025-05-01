@@ -11,6 +11,7 @@ const gestureArea = document.getElementById("gesture-area");
 const canvas = document.getElementById("path-canvas");
 const ctx = canvas.getContext("2d");
 let isDragging = false;
+let initiatingButton = null;
 let startX = 0;
 let startY = 0;
 let currentX = 0;
@@ -75,9 +76,10 @@ gestureArea.addEventListener("contextmenu", (e) => {
 });
 
 gestureArea.addEventListener("mousedown", (e) => {
-  // Accept both left (0) and right (2) mouse buttons
-  if (e.button === 0 || e.button === 2) {
+  // Accept left (0), middle (1), and right (2) mouse buttons
+  if (e.button === 0 || e.button === 1 || e.button === 2) {
     isDragging = true;
+    initiatingButton = e.button;
     startX = e.clientX;
     startY = e.clientY;
     currentX = e.clientX;
@@ -121,17 +123,25 @@ window.addEventListener("mousemove", (e) => {
 });
 
 // Function to find matching gesture command and get all action descriptions
-function findGestureDescriptions(sequence, inputType) {
-  // Find exact match first with specific inputType
+function findGestureDescriptions(sequence, inputType, button = null) {
+  // Map button number to string for comparison, default to 'left' if not specified
+  let buttonStr = "left";
+  if (button === 0) buttonStr = "left";
+  else if (button === 1) buttonStr = "middle";
+  else if (button === 2) buttonStr = "right";
+
+  // Find exact match first with specific inputType and button
   const exactSpecificMatch = gestureCommands.find(
-    (cmd) => cmd.gesture === sequence && cmd.inputType === inputType
+    (cmd) =>
+      cmd.gesture === sequence &&
+      cmd.inputType === inputType &&
+      cmd.button === buttonStr
   );
   if (
     exactSpecificMatch &&
     exactSpecificMatch.actions &&
     exactSpecificMatch.actions.length > 0
   ) {
-    // Return all action descriptions
     return {
       gesture: sequence,
       descriptions: exactSpecificMatch.actions.map((action) => ({
@@ -141,17 +151,85 @@ function findGestureDescriptions(sequence, inputType) {
     };
   }
 
-  // Then try exact match with 'any' or unspecified inputType
+  // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
+  if (buttonStr !== "left") {
+    const exactSpecificInputMatchLeft = gestureCommands.find(
+      (cmd) =>
+        cmd.gesture === sequence &&
+        cmd.inputType === inputType &&
+        cmd.button === "left"
+    );
+    if (
+      exactSpecificInputMatchLeft &&
+      exactSpecificInputMatchLeft.actions &&
+      exactSpecificInputMatchLeft.actions.length > 0
+    ) {
+      return {
+        gesture: sequence,
+        descriptions: exactSpecificInputMatchLeft.actions.map((action) => ({
+          command: action.command,
+          description: action.description || "",
+        })),
+      };
+    }
+  }
+
+  // Then try exact match with any/unspecified inputType and specific button
+  const exactSpecificButtonMatch = gestureCommands.find(
+    (cmd) =>
+      cmd.gesture === sequence &&
+      (cmd.inputType === "any" || !cmd.inputType) &&
+      cmd.button === buttonStr
+  );
+  if (
+    exactSpecificButtonMatch &&
+    exactSpecificButtonMatch.actions &&
+    exactSpecificButtonMatch.actions.length > 0
+  ) {
+    return {
+      gesture: sequence,
+      descriptions: exactSpecificButtonMatch.actions.map((action) => ({
+        command: action.command,
+        description: action.description || "",
+      })),
+    };
+  }
+
+  // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+  if (buttonStr !== "left") {
+    const exactAnyMatchLeft = gestureCommands.find(
+      (cmd) =>
+        cmd.gesture === sequence &&
+        (cmd.inputType === "any" || !cmd.inputType) &&
+        cmd.button === "left"
+    );
+    if (
+      exactAnyMatchLeft &&
+      exactAnyMatchLeft.actions &&
+      exactAnyMatchLeft.actions.length > 0
+    ) {
+      return {
+        gesture: sequence,
+        descriptions: exactAnyMatchLeft.actions.map((action) => ({
+          command: action.command,
+          description: action.description || "",
+        })),
+      };
+    }
+  }
+
+  // Finally, try matches with unspecified button, defaulting to 'left'
   const exactAnyMatch = gestureCommands.find(
     (cmd) =>
-      cmd.gesture === sequence && (cmd.inputType === "any" || !cmd.inputType)
+      cmd.gesture === sequence &&
+      (cmd.inputType === "any" || !cmd.inputType) &&
+      !cmd.button
   );
   if (
     exactAnyMatch &&
     exactAnyMatch.actions &&
     exactAnyMatch.actions.length > 0
   ) {
-    // Return all action descriptions
     return {
       gesture: sequence,
       descriptions: exactAnyMatch.actions.map((action) => ({
@@ -162,25 +240,20 @@ function findGestureDescriptions(sequence, inputType) {
   }
 
   // Try pattern match if no exact match
-  // Get all pattern-type commands
   const patternCommands = gestureCommands.filter(
     (cmd) => cmd.matchType === "pattern"
   );
 
-  // Log for debugging
   console.log(
     `Testing ${sequence} against ${patternCommands.length} pattern commands`
   );
 
-  // First, try pattern matches with specific inputType
+  // First, try pattern matches with specific inputType and specific button
   for (const cmd of patternCommands) {
-    if (cmd.inputType === inputType) {
+    if (cmd.inputType === inputType && cmd.button === buttonStr) {
       try {
         console.log(`Testing pattern: ${cmd.gesture}`);
-        // Create a RegExp object from the gesture pattern
         const regex = new RegExp(cmd.gesture);
-
-        // Test if the sequence matches the pattern
         if (regex.test(sequence)) {
           console.log(`Match found for pattern: ${cmd.gesture}`);
           return {
@@ -193,20 +266,43 @@ function findGestureDescriptions(sequence, inputType) {
         }
       } catch (error) {
         console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-        // Continue to the next pattern if this one is invalid
       }
     }
   }
 
-  // Then, try pattern matches with 'any' or unspecified inputType
+  // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
+  if (buttonStr !== "left") {
+    for (const cmd of patternCommands) {
+      if (cmd.inputType === inputType && cmd.button === "left") {
+        try {
+          console.log(`Testing pattern: ${cmd.gesture}`);
+          const regex = new RegExp(cmd.gesture);
+          if (regex.test(sequence)) {
+            console.log(`Match found for pattern: ${cmd.gesture}`);
+            return {
+              gesture: sequence,
+              descriptions: cmd.actions.map((action) => ({
+                command: action.command,
+                description: action.description || "",
+              })),
+            };
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
+        }
+      }
+    }
+  }
+
+  // Then, try pattern matches with any/unspecified inputType and specific button
   for (const cmd of patternCommands) {
-    if (cmd.inputType === "any" || !cmd.inputType) {
+    if (
+      (cmd.inputType === "any" || !cmd.inputType) &&
+      cmd.button === buttonStr
+    ) {
       try {
         console.log(`Testing pattern: ${cmd.gesture}`);
-        // Create a RegExp object from the gesture pattern
         const regex = new RegExp(cmd.gesture);
-
-        // Test if the sequence matches the pattern
         if (regex.test(sequence)) {
           console.log(`Match found for pattern: ${cmd.gesture}`);
           return {
@@ -219,7 +315,55 @@ function findGestureDescriptions(sequence, inputType) {
         }
       } catch (error) {
         console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-        // Continue to the next pattern if this one is invalid
+      }
+    }
+  }
+
+  // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+  if (buttonStr !== "left") {
+    for (const cmd of patternCommands) {
+      if (
+        (cmd.inputType === "any" || !cmd.inputType) &&
+        cmd.button === "left"
+      ) {
+        try {
+          console.log(`Testing pattern: ${cmd.gesture}`);
+          const regex = new RegExp(cmd.gesture);
+          if (regex.test(sequence)) {
+            console.log(`Match found for pattern: ${cmd.gesture}`);
+            return {
+              gesture: sequence,
+              descriptions: cmd.actions.map((action) => ({
+                command: action.command,
+                description: action.description || "",
+              })),
+            };
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
+        }
+      }
+    }
+  }
+
+  // Finally, try matches with unspecified button, defaulting to 'left'
+  for (const cmd of patternCommands) {
+    if ((cmd.inputType === "any" || !cmd.inputType) && !cmd.button) {
+      try {
+        console.log(`Testing pattern: ${cmd.gesture}`);
+        const regex = new RegExp(cmd.gesture);
+        if (regex.test(sequence)) {
+          console.log(`Match found for pattern: ${cmd.gesture}`);
+          return {
+            gesture: sequence,
+            descriptions: cmd.actions.map((action) => ({
+              command: action.command,
+              description: action.description || "",
+            })),
+          };
+        }
+      } catch (error) {
+        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
       }
     }
   }
@@ -304,7 +448,8 @@ window.addEventListener("mouseup", () => {
       if (enableGesturePreview) {
         const gestureInfo = findGestureDescriptions(
           normalizedSequence,
-          "mouse"
+          "mouse",
+          initiatingButton
         );
         showGesturePreview(gestureInfo);
       }
@@ -316,7 +461,9 @@ window.addEventListener("mouseup", () => {
         simplifiedPath: simplifiedPath,
         originalPath: gesturePath,
         inputType: "mouse",
+        button: initiatingButton,
       });
+      initiatingButton = null;
     }
 
     // Reset path for next gesture
@@ -352,7 +499,7 @@ window.addEventListener("mouseup", () => {
     if (direction) {
       // Show preview if enabled
       if (enableGesturePreview) {
-        const gestureInfo = findGestureDescriptions(direction, "wheel");
+        const gestureInfo = findGestureDescriptions(direction, "wheel", null);
         showGesturePreview(gestureInfo);
       }
 

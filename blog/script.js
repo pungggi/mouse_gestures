@@ -1,3 +1,4 @@
+/* global Prism */
 // Check if Prism.js is loaded
 if (typeof Prism !== "undefined") {
   // Prism.js is loaded, proceed with syntax highlighting

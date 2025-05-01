@@ -320,37 +320,89 @@ class GesturePadViewProvider {
   }
 
   // Helper method to find gesture matches with optimized matching strategy
-  _findGestureMatch(gesture, commands, enablePatternMatching, inputType) {
-    // Try exact match first with specific inputType (most specific)
+  _findGestureMatch(
+    gesture,
+    commands,
+    enablePatternMatching,
+    inputType,
+    buttonStr
+  ) {
+    // Try exact match first with specific inputType and specific button (most specific)
     const exactSpecificMatch = commands.find(
-      (gc) => gc.gesture === gesture && gc.inputType === inputType
+      (gc) =>
+        gc.gesture === gesture &&
+        gc.inputType === inputType &&
+        gc.button === buttonStr
     );
-    if (exactSpecificMatch) return exactSpecificMatch;
+    if (exactSpecificMatch) {
+      return exactSpecificMatch;
+    }
 
-    // Then try exact match with 'any' or unspecified inputType
+    // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      const exactSpecificInputMatchLeft = commands.find(
+        (gc) =>
+          gc.gesture === gesture &&
+          gc.inputType === inputType &&
+          gc.button === "left"
+      );
+      if (exactSpecificInputMatchLeft) {
+        return exactSpecificInputMatchLeft;
+      }
+    }
+
+    // Then try exact match with any/unspecified inputType and specific button
+    const exactSpecificButtonMatch = commands.find(
+      (gc) =>
+        gc.gesture === gesture &&
+        (gc.inputType === "any" || !gc.inputType) &&
+        gc.button === buttonStr
+    );
+    if (exactSpecificButtonMatch) {
+      return exactSpecificButtonMatch;
+    }
+
+    // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      const exactAnyMatchLeft = commands.find(
+        (gc) =>
+          gc.gesture === gesture &&
+          (gc.inputType === "any" || !gc.inputType) &&
+          gc.button === "left"
+      );
+      if (exactAnyMatchLeft) {
+        return exactAnyMatchLeft;
+      }
+    }
+
+    // Finally, try matches with unspecified button, defaulting to 'left'
     const exactAnyMatch = commands.find(
       (gc) =>
-        gc.gesture === gesture && (gc.inputType === "any" || !gc.inputType)
+        gc.gesture === gesture &&
+        (gc.inputType === "any" || !gc.inputType) &&
+        !gc.button
     );
-    if (exactAnyMatch) return exactAnyMatch;
+    if (exactAnyMatch) {
+      return exactAnyMatch;
+    }
 
     // Try pattern match last (most expensive)
     if (enablePatternMatching) {
-      return this._findPatternMatch(gesture, commands, inputType);
+      return this._findPatternMatch(gesture, commands, inputType, buttonStr);
     }
 
     return null;
   }
 
   // Optimized pattern matching with caching
-  _findPatternMatch(gesture, gestureCommands, inputType) {
+  _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
     const patternCommands = gestureCommands.filter(
       (gc) => gc.matchType === "pattern"
     );
 
-    // First, try pattern matches with specific inputType
+    // First, try pattern matches with specific inputType and specific button
     for (const command of patternCommands) {
-      if (command.inputType === inputType) {
+      if (command.inputType === inputType && command.button === buttonStr) {
         let regex = this._patternCache.get(command.gesture);
 
         if (!regex) {
@@ -373,14 +425,98 @@ class GesturePadViewProvider {
       }
     }
 
-    // Then, try pattern matches with 'any' or unspecified inputType
+    // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (command.inputType === inputType && command.button === "left") {
+          let regex = this._patternCache.get(command.gesture);
+
+          if (!regex) {
+            try {
+              regex = new RegExp(command.gesture);
+              this._patternCache.set(command.gesture, regex);
+            } catch (e) {
+              console.error(
+                `Invalid regex pattern for gesture: ${command.gesture}`,
+                e
+              );
+              continue;
+            }
+          }
+
+          if (regex.test(gesture)) {
+            return command;
+          }
+        }
+      }
+    }
+
+    // Then, try pattern matches with any/unspecified inputType and specific button
     for (const command of patternCommands) {
-      if (command.inputType === "any" || !command.inputType) {
+      if (
+        (command.inputType === "any" || !command.inputType) &&
+        command.button === buttonStr
+      ) {
         let regex = this._patternCache.get(command.gesture);
 
         if (!regex) {
           try {
-            // Use the gesture string as a regex directly (allowing complex patterns)
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture)) {
+          return command;
+        }
+      }
+    }
+
+    // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (
+          (command.inputType === "any" || !command.inputType) &&
+          command.button === "left"
+        ) {
+          let regex = this._patternCache.get(command.gesture);
+
+          if (!regex) {
+            try {
+              regex = new RegExp(command.gesture);
+              this._patternCache.set(command.gesture, regex);
+            } catch (e) {
+              console.error(
+                `Invalid regex pattern for gesture: ${command.gesture}`,
+                e
+              );
+              continue;
+            }
+          }
+
+          if (regex.test(gesture)) {
+            return command;
+          }
+        }
+      }
+    }
+
+    // Finally, try matches with unspecified button, defaulting to 'left'
+    for (const command of patternCommands) {
+      if (
+        (command.inputType === "any" || !command.inputType) &&
+        !command.button
+      ) {
+        let regex = this._patternCache.get(command.gesture);
+
+        if (!regex) {
+          try {
             regex = new RegExp(command.gesture);
             this._patternCache.set(command.gesture, regex);
           } catch (e) {
@@ -399,6 +535,9 @@ class GesturePadViewProvider {
     }
     return null;
   }
+
+  // No longer needed since 'any' is removed and button is mandatory with default 'left'
+  // Conflict checking is simplified by always requiring a specific button or defaulting to 'left'
 
   // Cached gesture map for faster lookups
   static GESTURE_MAP = {
@@ -428,11 +567,18 @@ class GesturePadViewProvider {
 
       // Try to find a match regardless of whether the gesture is in GESTURE_MAP
       const inputType = details.inputType || "mouse"; // Default to mouse if not specified
+      // Convert button number to string, default to 'left' if not specified
+      let buttonStr = "left";
+      if (details.button === 0) buttonStr = "left";
+      else if (details.button === 1) buttonStr = "middle";
+      else if (details.button === 2) buttonStr = "right";
+
       const match = this._findGestureMatch(
         gesture,
         gestureCommands,
         enablePatternMatching,
-        inputType
+        inputType,
+        buttonStr
       );
 
       if (!match) {
@@ -440,7 +586,9 @@ class GesturePadViewProvider {
         const assignOption = "Assign Command";
         const cancelOption = "Cancel";
         const response = await vscode.window.showInformationMessage(
-          `Gesture '${gesture}' is not assigned. Assign a command?`,
+          `Gesture '${gesture}'${
+            buttonStr ? ` with ${buttonStr} button` : ""
+          } is not assigned. Assign a command?`,
           assignOption,
           cancelOption
         );
@@ -457,6 +605,8 @@ class GesturePadViewProvider {
             const newBinding = {
               gesture: gesture,
               matchType: "exact",
+              inputType: inputType,
+              button: buttonStr,
               actions: [
                 { command: selectedCommand, description: description || "" },
               ],

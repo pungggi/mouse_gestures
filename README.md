@@ -170,6 +170,12 @@ Some examples:
   - `"sequential"`: Execute commands one after another (default)
   - `"parallel"`: Execute all commands simultaneously
 
+- `button`: Specifies the mouse button this gesture applies to (mandatory)
+
+  - `"left"`: Applies to left mouse button gestures (default).
+  - `"middle"`: Applies to middle mouse button gestures.
+  - `"right"`: Applies to right mouse button gestures.
+
 - `actions`: Array of command objects, each containing:
   - `command`: The VS Code command ID to execute (required)
   - `description`: Optional description of what the command does
@@ -275,6 +281,7 @@ For creating reliable and memorable complex gesture patterns:
 
    - Ensure complex patterns don't conflict with simpler gestures
    - Be careful with patterns that might match as prefixes of other patterns
+   - Avoid defining both specific button gestures (e.g., `button: "left"`) and generic ones (e.g., `button: "any"` or unspecified) for the same gesture shape, as this will result in a warning and no command execution until resolved in `settings.json`.
 
 ### Technical Details
 
@@ -299,7 +306,7 @@ Performance considerations:
 
 A test webpage is available locally in the `dist` folder (./dist/test_gesture_recognition.html).
 
-Common issues with complex gesture patterns and how to resolve them:
+Common issues with complex gesture patterns, button configurations, and how to resolve them:
 
 1. **Pattern Not Matching**
 
@@ -326,7 +333,17 @@ Common issues with complex gesture patterns and how to resolve them:
      - Use anchors (`^` and `$`) to ensure exact matching
      - Review the order of your gesture configurations
 
-4. **Performance Issues**
+4. **Button Configuration Requirement**
+
+   - **Issue**: The `button` field is now mandatory in gesture configurations.
+   - **Solution**:
+     - Open your `settings.json` file in VS Code.
+     - Navigate to the `mouseGestures.gestureCommands` section.
+     - Ensure each gesture entry has a `button` field specified as `"left"`, `"middle"`, or `"right"`.
+     - If not specified, it defaults to `"left"`.
+     - Save the file to ensure compatibility with the updated extension.
+
+5. **Performance Issues**
 
    - **Issue**: Noticeable lag when using complex patterns
    - **Solution**:
@@ -334,7 +351,7 @@ Common issues with complex gesture patterns and how to resolve them:
      - Simplify regex patterns by avoiding excessive use of lookaheads/lookbehinds
      - Make gestures more deliberate and distinct
 
-5. **Regex Syntax Errors**
+6. **Regex Syntax Errors**
    - **Issue**: Pattern not working due to invalid regex syntax
    - **Solution**:
      - Check the browser console for error messages

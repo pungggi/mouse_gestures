@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "engines": {
@@ -124,6 +124,16 @@
                 ],
                 "default": "sequential",
                 "description": "Whether to execute commands sequentially or in parallel"
+              },
+              "button": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "middle",
+                  "right"
+                ],
+                "default": "left",
+                "description": "Specifies the mouse button this gesture applies to: 'left' (default), 'middle', or 'right'. This field is mandatory."
               },
               "actions": {
                 "type": "array",
