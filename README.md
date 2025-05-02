@@ -7,12 +7,9 @@ The first extension with enhanced mouse gesture support for Visual Studio Code. 
 - Execute VS Code commands using mouse gestures
 - Configure custom gesture-to-command mappings
 - Support for sequential and parallel command execution
-- Support for waiting on command completion
-- Built-in gesture pad for gesture detection
 - Support for complex gesture patterns using regular expressions
-- Full 8-direction support including diagonal movements (UR, UL, DR, DL)
 - View all configured gestures with the "Mouse Gestures: Show Cheat Sheet" command
-- Assign commands to unrecognized gestures with a simple prompt here is in example:
+- Assign commands to unrecognized gestures with a simple prompt here is an example:
   ![Gesture Pad Interface](https://i.imgur.com/w8IptDb.gif)
 
   The example above adds the following to the settings.json:
@@ -38,9 +35,11 @@ The first extension with enhanced mouse gesture support for Visual Studio Code. 
 
 The extension provides a gesture pad view in the activity bar where you can perform mouse gestures. When a gesture is detected, it executes the corresponding command(s) based on your configuration.
 
-1. Click and hold the right or left mouse button in the gesture pad
+1. Click and hold the right, middle or left mouse button in the gesture pad
 2. Move the mouse to draw your gesture (e.g., move right for "R" gesture, down-right for "DR" gesture)
 3. Release the mouse button to execute the configured command(s)
+
+4. Alternatively you can just do one mouse wheel (up, down, left or right)
 
 ### Default Gesture Mappings
 
@@ -74,6 +73,16 @@ Some examples:
         "description": "Switch to next editor"
       }
     ]
+  },
+  {
+      "gesture": "U",
+      "inputType": "wheel",
+      "actions": [
+          {
+              "command": "workbench.action.previousEditor",
+              "description": "prev"
+          }
+      ]
   },
   {
     // Complex gesture with multiple sequential commands
@@ -278,8 +287,6 @@ For creating reliable and memorable complex gesture patterns:
 5. **Avoid conflicts**
 
    - Ensure complex patterns don't conflict with simpler gestures
-   - Be careful with patterns that might match as prefixes of other patterns
-   - Avoid defining both specific button gestures (e.g., `button: "left"`) and generic ones (e.g., `button: "any"` or unspecified) for the same gesture shape, as this will result in a warning and no command execution until resolved in `settings.json`.
 
 ### Technical Details
 
@@ -294,11 +301,6 @@ The extension implements [Douglas-Peucker path simplification algorithm](https:/
 2. If pattern matching is enabled, the system checks each pattern-type gesture configuration
 3. The gesture string is tested against each regex pattern using JavaScript's `RegExp.test()`
 4. The first matching pattern's commands are executed
-
-Performance considerations:
-
-- Complex regex patterns may impact performance if overused
-- Patterns are compiled and cached for better performance
 
 ### Troubleshooting
 
