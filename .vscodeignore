@@ -4,6 +4,7 @@
 .gitignore
 test/**
 node_modules/**
+blog/**
 scripts/**
 src/**
 webpack.*.js
