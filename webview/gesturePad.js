@@ -19,6 +19,7 @@ let currentY = 0;
 // Store the full path as an array of points
 let gesturePath = [];
 
+let wheelUsedDuringDrag = false; // Flag to track if wheel was used during drag
 // Variables for visual feedback
 
 // Customization options
@@ -71,11 +72,59 @@ window.addEventListener("message", (event) => {
 window.addEventListener("resize", resizeCanvas);
 resizeCanvas(); // Initial size
 
+// Top-level wheel event listener
+gestureArea.addEventListener("wheel", (e) => {
+  if (isDragging) {
+    wheelUsedDuringDrag = true; // Set flag if wheel is used during drag
+    return; // Do not send a separate message; let mouseup handle it
+  }
+
+  e.preventDefault(); // Prevent default scrolling behavior
+
+  // Determine direction based on delta values
+  let direction = "";
+
+  // Check deltaY for up/down
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+    if (e.deltaY < 0) {
+      direction = "U"; // Up
+    } else if (e.deltaY > 0) {
+      direction = "D"; // Down
+    }
+  } else {
+    // Check deltaX for left/right
+    if (e.deltaX < 0) {
+      direction = "L"; // Left
+    } else if (e.deltaX > 0) {
+      direction = "R"; // Right
+    }
+  }
+
+  if (direction) {
+    // Show preview if enabled
+    if (enableGesturePreview) {
+      const gestureInfo = findGestureDescriptions(direction, "wheel", null);
+      showGesturePreview(gestureInfo);
+    }
+
+    // Send the wheel gesture to the extension (for standalone wheel events)
+    vscode.postMessage({
+      command: "gestureDetected",
+      sequence: direction,
+      rawSequence: direction,
+      simplifiedPath: [],
+      originalPath: [],
+      inputType: "wheel",
+    });
+  }
+});
+
 gestureArea.addEventListener("contextmenu", (e) => {
   e.preventDefault(); // Prevent context menu inside the pad
 });
 
 gestureArea.addEventListener("mousedown", (e) => {
+  wheelUsedDuringDrag = false; // Reset flag at the start of a new drag
   // Accept left (0), middle (1), and right (2) mouse buttons
   if (e.button === 0 || e.button === 1 || e.button === 2) {
     isDragging = true;
@@ -130,13 +179,22 @@ function findGestureDescriptions(sequence, inputType, button = null) {
   else if (button === 1) buttonStr = "middle";
   else if (button === 2) buttonStr = "right";
 
-  // Find exact match first with specific inputType and button
-  const exactSpecificMatch = gestureCommands.find(
-    (cmd) =>
-      cmd.gesture === sequence &&
-      cmd.inputType === inputType &&
-      cmd.button === buttonStr
-  );
+  let exactSpecificMatch = null;
+  // Check for exact match with specific inputType and button
+  if (inputType === "wheel") {
+    buttonStr = undefined;
+    exactSpecificMatch = gestureCommands.find(
+      (cmd) => cmd.gesture === sequence && cmd.inputType === inputType
+    );
+  } else {
+    exactSpecificMatch = gestureCommands.find(
+      (cmd) =>
+        cmd.gesture === sequence &&
+        cmd.inputType === inputType &&
+        cmd.button === buttonStr
+    );
+  }
+
   if (
     exactSpecificMatch &&
     exactSpecificMatch.actions &&
@@ -177,9 +235,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
   // Then try exact match with any/unspecified inputType and specific button
   const exactSpecificButtonMatch = gestureCommands.find(
     (cmd) =>
-      cmd.gesture === sequence &&
-      (cmd.inputType === "any" || !cmd.inputType) &&
-      cmd.button === buttonStr
+      cmd.gesture === sequence && !cmd.inputType && cmd.button === buttonStr
   );
   if (
     exactSpecificButtonMatch &&
@@ -199,9 +255,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
   if (buttonStr !== "left") {
     const exactAnyMatchLeft = gestureCommands.find(
       (cmd) =>
-        cmd.gesture === sequence &&
-        (cmd.inputType === "any" || !cmd.inputType) &&
-        cmd.button === "left"
+        cmd.gesture === sequence && !cmd.inputType && cmd.button === "left"
     );
     if (
       exactAnyMatchLeft &&
@@ -220,10 +274,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
 
   // Finally, try matches with unspecified button, defaulting to 'left'
   const exactAnyMatch = gestureCommands.find(
-    (cmd) =>
-      cmd.gesture === sequence &&
-      (cmd.inputType === "any" || !cmd.inputType) &&
-      !cmd.button
+    (cmd) => cmd.gesture === sequence && !cmd.inputType && !cmd.button
   );
   if (
     exactAnyMatch &&
@@ -296,10 +347,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
 
   // Then, try pattern matches with any/unspecified inputType and specific button
   for (const cmd of patternCommands) {
-    if (
-      (cmd.inputType === "any" || !cmd.inputType) &&
-      cmd.button === buttonStr
-    ) {
+    if (!cmd.inputType && cmd.button === buttonStr) {
       try {
         console.log(`Testing pattern: ${cmd.gesture}`);
         const regex = new RegExp(cmd.gesture);
@@ -322,10 +370,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
   // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
   if (buttonStr !== "left") {
     for (const cmd of patternCommands) {
-      if (
-        (cmd.inputType === "any" || !cmd.inputType) &&
-        cmd.button === "left"
-      ) {
+      if (!cmd.inputType && cmd.button === "left") {
         try {
           console.log(`Testing pattern: ${cmd.gesture}`);
           const regex = new RegExp(cmd.gesture);
@@ -348,7 +393,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
 
   // Finally, try matches with unspecified button, defaulting to 'left'
   for (const cmd of patternCommands) {
-    if ((cmd.inputType === "any" || !cmd.inputType) && !cmd.button) {
+    if (!cmd.inputType && !cmd.button) {
       try {
         console.log(`Testing pattern: ${cmd.gesture}`);
         const regex = new RegExp(cmd.gesture);
@@ -402,7 +447,7 @@ function showGesturePreview(gestureInfo) {
 
   // Format descriptions with curly braces
   const formattedDescriptions = gestureInfo.descriptions
-    .map((item) => `{${item.description}}`)
+    .map((item) => `\r${item.description ? ">" + item.description : ">"}`) // Use description if available, otherwise use command
     .join(" "); // Join with spaces
 
   // Combine sequence and descriptions
@@ -454,14 +499,23 @@ window.addEventListener("mouseup", () => {
         showGesturePreview(gestureInfo);
       }
 
+      // Determine payload based on whether wheel was used
+      let payloadInputType = "mouse";
+      let payloadButton = initiatingButton; // Use the stored mouse button by default
+
+      if (wheelUsedDuringDrag) {
+        payloadInputType = "wheel";
+        payloadButton = "none"; // Use "none" for wheel input as requested
+      }
+
       vscode.postMessage({
         command: "gestureDetected",
         sequence: normalizedSequence,
         rawSequence: rawSequence,
         simplifiedPath: simplifiedPath,
         originalPath: gesturePath,
-        inputType: "mouse",
-        button: initiatingButton,
+        inputType: payloadInputType,
+        button: payloadButton,
       });
       initiatingButton = null;
     }
@@ -472,46 +526,5 @@ window.addEventListener("mouseup", () => {
   // Send a message to the extension indicating that the webview is ready
   vscode.postMessage({
     command: "webviewReady",
-  });
-  // --- Mouse wheel handler: detect scrolling direction ---
-  gestureArea.addEventListener("wheel", (e) => {
-    e.preventDefault(); // Prevent default scrolling behavior
-
-    // Determine direction based on delta values
-    let direction = "";
-
-    // Check deltaY for up/down
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      if (e.deltaY < 0) {
-        direction = "U"; // Up
-      } else if (e.deltaY > 0) {
-        direction = "D"; // Down
-      }
-    } else {
-      // Check deltaX for left/right
-      if (e.deltaX < 0) {
-        direction = "L"; // Left
-      } else if (e.deltaX > 0) {
-        direction = "R"; // Right
-      }
-    }
-
-    if (direction) {
-      // Show preview if enabled
-      if (enableGesturePreview) {
-        const gestureInfo = findGestureDescriptions(direction, "wheel", null);
-        showGesturePreview(gestureInfo);
-      }
-
-      // Send the wheel gesture to the extension
-      vscode.postMessage({
-        command: "gestureDetected",
-        sequence: direction,
-        rawSequence: direction,
-        simplifiedPath: [],
-        originalPath: [],
-        inputType: "wheel",
-      });
-    }
   });
 });

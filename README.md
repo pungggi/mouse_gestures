@@ -11,16 +11,15 @@ The first extension with enhanced mouse gesture support for Visual Studio Code. 
 - Built-in gesture pad for gesture detection
 - Support for complex gesture patterns using regular expressions
 - Full 8-direction support including diagonal movements (UR, UL, DR, DL)
-- Assign commands to unrecognized gestures with a simple prompt
 - View all configured gestures with the "Mouse Gestures: Show Cheat Sheet" command
+- Assign commands to unrecognized gestures with a simple prompt here is in example:
   ![Gesture Pad Interface](https://i.imgur.com/w8IptDb.gif)
 
-  Adds the following to the setting:
+  The example above adds the following to the settings.json:
 
   ```jsonc
   {
     "gesture": "DURDRU",
-    "matchType": "exact",
     "actions": [
       {
         "command": "git.commitStaged",
@@ -163,14 +162,13 @@ Some examples:
 
   - `"mouse"`: Applies only to mouse drag gestures.
   - `"wheel"`: Applies only to mouse wheel actions.
-  - `"any"`: Applies to both mouse drag and wheel actions (default).
 
 - `executionMode`: How to execute multiple commands (optional)
 
   - `"sequential"`: Execute commands one after another (default)
   - `"parallel"`: Execute all commands simultaneously
 
-- `button`: Specifies the mouse button this gesture applies to (mandatory)
+- `button`: Specifies the mouse button this gesture applies to (mandatory for inputType=mouse)
 
   - `"left"`: Applies to left mouse button gestures (default).
   - `"middle"`: Applies to middle mouse button gestures.

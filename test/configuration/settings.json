@@ -1,0 +1,39 @@
+{
+    "mouseGestures.gestureCommands": [
+        {
+            "gesture": "U",
+            "button": "left",
+            "executionMode": "sequential",
+            "actions": [
+                {
+                    "command": "workbench.action.terminal.newWithCwd",
+                    "description": ""
+                },
+                {
+                    "command": "workbench.action.terminal.sendSequence",
+                    "description": "Open app.json",
+                    "args": [
+                        {
+                            "text": "code app.json\r"
+                        }
+                    ],
+                    "waitSeconds": 1
+                },
+                {
+                    "command": "workbench.action.terminal.kill",
+                    "description": ""
+                }
+            ]
+        },
+        {
+            "gesture": "U",
+            "inputType": "wheel",
+            "actions": [
+                {
+                    "command": "editor.unfoldAll",
+                    "description": "unfold"
+                }
+            ]
+        }
+    ]
+}
