@@ -1,107 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mouse Gestures Cheat Sheet</title>
     <style>
-        :root {
-            --card-bg: var(--vscode-editor-background, #1e1e1e);
-            --card-border: var(--vscode-panel-border, #3c3c3c);
-            --text-color: var(--vscode-editor-foreground, #d4d4d4);
-            --highlight-color: var(--vscode-textLink-foreground, #3794ff);
-        }
-        
-        body {
-            font-family: var(--vscode-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-            color: var(--text-color);
-            padding: 16px;
-            margin: 0;
-        }
-        
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 16px;
-            text-align: center;
-            color: var(--highlight-color);
-        }
-        
-        .gesture-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
-        }
-        
-        .gesture-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        .gesture-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .gesture-visual {
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-        
-        svg {
-            max-height: none;
-            height: auto;
-            width: 120px;
-            vertical-align: middle;
-        }
-        
-        circle {
-            fill: var(--highlight-color);
-            r: 4;
-        }
-        
-        line {
-            stroke: var(--text-color);
-            stroke-width: 2;
-        }
-        
-        .command-id {
-            text-align: center;
-            margin: 8px 0 0 0;
-            font-size: 0.9rem;
-            word-break: break-word;
-        }
-        
-        .gesture-name {
-            font-weight: bold;
-            color: var(--highlight-color);
-            margin-top: 4px;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .no-gestures {
-            text-align: center;
-            margin-top: 32px;
-            font-style: italic;
-            color: var(--vscode-disabledForeground, #888);
-        }
+      :root {
+        --card-bg: var(--vscode-editor-background, #1e1e1e);
+        --card-border: var(--vscode-panel-border, #3c3c3c);
+        --text-color: var(--vscode-editor-foreground, #d4d4d4);
+        --highlight-color: var(--vscode-textLink-foreground, #3794ff);
+      }
+
+      body {
+        font-family: var(
+          --vscode-font-family,
+          "Segoe UI",
+          Tahoma,
+          Geneva,
+          Verdana,
+          sans-serif
+        );
+        color: var(--text-color);
+        padding: 16px;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 16px;
+        text-align: center;
+        color: var(--highlight-color);
+      }
+
+      .gesture-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .gesture-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 6px;
+        padding: 16px;
+        margin: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .gesture-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .gesture-visual {
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      svg {
+        max-height: none;
+        height: auto;
+        width: 120px;
+        vertical-align: middle;
+      }
+
+      circle {
+        fill: var(--highlight-color);
+        r: 4;
+      }
+
+      line {
+        stroke: var(--text-color);
+        stroke-width: 2;
+      }
+
+      .wheel-gesture-card circle {
+        fill: var(--vscode-statusBarItem-warningBackground, #e9a700);
+        r: 6;
+        filter: drop-shadow(0 0 2px rgba(233, 167, 0, 0.5));
+      }
+
+      .wheel-gesture-card line {
+        stroke: var(--vscode-statusBarItem-warningBackground, #e9a700);
+        stroke-width: 3;
+        stroke-linecap: round;
+        filter: drop-shadow(0 0 2px rgba(233, 167, 0, 0.3));
+      }
+
+      /* Add a subtle background to the SVG in wheel gesture cards */
+      .wheel-gesture-card svg {
+        background-color: rgba(233, 167, 0, 0.05);
+        border-radius: 8px;
+        padding: 4px;
+      }
+
+      .command-id {
+        text-align: center;
+        margin: 8px 4px 4px 4px;
+        font-size: 0.9rem;
+        word-break: break-word;
+      }
+
+      .gesture-name {
+        font-weight: bold;
+        color: var(--highlight-color);
+        margin-top: 4px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-align: center;
+        width: 100%;
+      }
+
+      .no-gestures {
+        text-align: center;
+        margin-top: 32px;
+        font-style: italic;
+        color: var(--vscode-disabledForeground, #888);
+      }
+
+      .wheel-gesture-card {
+        background-color: var(--vscode-editor-background, #1e1e1e);
+        border: 1px solid var(--vscode-panel-border, #3c3c3c);
+        border-radius: 6px;
+        padding: 16px;
+        margin: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+        /* Special styling for wheel gestures */
+        border: 1px solid var(--vscode-statusBarItem-warningBackground, #e9a700);
+        box-shadow: 0 0 5px rgba(233, 167, 0, 0.2);
+      }
+
+      .wheel-gesture-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 8px rgba(233, 167, 0, 0.4);
+      }
+
+      .wheel-gesture-name {
+        font-weight: bold;
+        color: var(--vscode-statusBarItem-warningBackground, #e9a700);
+        padding: 2px 6px;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-align: center;
+        width: 100%;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Mouse Gestures Cheat Sheet</h1>
     <div id="gesture-container">
-        <!-- Gestures will be rendered here -->
+      <!-- Gestures will be rendered here -->
     </div>
     <script src="cheatSheet.js"></script>
-</body>
+  </body>
 </html>

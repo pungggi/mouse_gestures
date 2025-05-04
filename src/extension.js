@@ -68,7 +68,7 @@ function activate(context) {
           </style>
       </head>
       <body>
-          <div id="gesture-list"></div>
+          <div id="gesture-container"></div>
           <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>`;

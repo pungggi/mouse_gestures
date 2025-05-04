@@ -4,9 +4,9 @@
 const vscode = acquireVsCodeApi();
 
 function renderGestures(gestures) {
-  const container = document.getElementById("gesture-list");
+  const container = document.getElementById("gesture-container");
   if (!container) {
-    console.error("Container element #gesture-list not found");
+    console.error("Container element #gesture-container not found");
     return;
   }
 
@@ -34,44 +34,83 @@ function renderGestures(gestures) {
   const grid = document.createElement("div");
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(200px, 1fr))";
-  grid.style.gap = "12px";
+  grid.style.gap = "20px";
   grid.style.marginTop = "16px";
+  grid.style.padding = "10px";
 
   // Sort gestures by complexity (length of gesture string)
   gestures.sort((a, b) => a.gesture.length - b.gesture.length);
 
   gestures.forEach((gestureConfig) => {
+    // Check if this is a wheel gesture
+    const isWheelGesture = gestureConfig.inputType === "wheel";
+
     // Create card for each gesture
     const card = document.createElement("div");
-    card.style.backgroundColor = "var(--vscode-editor-background, #1e1e1e)";
-    card.style.border = "1px solid var(--vscode-panel-border, #3c3c3c)";
-    card.style.borderRadius = "4px";
-    card.style.padding = "10px";
-    card.style.display = "flex";
-    card.style.flexDirection = "column";
-    card.style.alignItems = "center";
-    card.style.transition = "transform 0.2s";
 
-    // Add hover effect
-    card.addEventListener("mouseenter", () => {
-      card.style.transform = "translateY(-2px)";
-      card.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
-    });
+    // Apply appropriate styling based on input type
+    if (isWheelGesture) {
+      card.className = "wheel-gesture-card";
 
-    card.addEventListener("mouseleave", () => {
-      card.style.transform = "translateY(0)";
-      card.style.boxShadow = "none";
-    });
+      // Add hover effect for wheel gestures
+      card.addEventListener("mouseenter", () => {
+        card.style.transform = "translateY(-2px)";
+        card.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+      });
 
-    // Add gesture name/pattern
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "translateY(0)";
+        card.style.boxShadow = "none";
+      });
+    } else {
+      card.className = "gesture-card"; // Use the class from CSS instead of inline styles
+
+      // Add hover effect for non-wheel gestures
+      card.addEventListener("mouseenter", () => {
+        card.style.transform = "translateY(-2px)";
+        card.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+      });
+
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "translateY(0)";
+        card.style.boxShadow = "none";
+      });
+    }
+
+    // Add gesture name/pattern with appropriate styling
     const gestureName = document.createElement("div");
-    gestureName.textContent = gestureConfig.gesture;
-    gestureName.style.fontWeight = "bold";
-    gestureName.style.color = "var(--vscode-textLink-foreground, #3794ff)";
-    gestureName.style.marginBottom = "8px";
-    gestureName.style.fontSize = "0.8rem";
-    gestureName.style.textTransform = "uppercase";
-    gestureName.style.letterSpacing = "1px";
+    gestureName.style.fontSize = "1rem";
+    gestureName.style.textAlign = "left";
+    gestureName.style.marginLeft = "12px";
+    gestureName.style.width = "100%";
+
+    if (isWheelGesture) {
+      // For wheel gestures, create a more elegant display
+      gestureName.className = "wheel-gesture-name";
+
+      // Just show the gesture direction without the [WHEEL] text
+      // The styling will make it clear it's a wheel gesture
+      gestureName.textContent = gestureConfig.gesture;
+
+      // Add a small wheel icon or indicator
+      const wheelIndicator = document.createElement("span");
+      wheelIndicator.textContent = " ⦿"; // Unicode wheel-like symbol
+      wheelIndicator.style.fontSize = "1rem";
+      wheelIndicator.style.verticalAlign = "middle";
+      wheelIndicator.style.marginLeft = "6px";
+      wheelIndicator.style.color =
+        "var(--vscode-statusBarItem-warningBackground, #e9a700)";
+      gestureName.appendChild(wheelIndicator);
+    } else {
+      gestureName.textContent = gestureConfig.gesture;
+      gestureName.style.fontWeight = "bold";
+      gestureName.style.color = "var(--vscode-textLink-foreground, #3794ff)";
+      gestureName.style.marginBottom = "8px";
+
+      gestureName.style.textTransform = "uppercase";
+      gestureName.style.letterSpacing = "1px";
+    }
+
     card.appendChild(gestureName);
 
     // Container for SVG visualization
@@ -89,7 +128,7 @@ function renderGestures(gestures) {
     // Add command container
     const commandContainer = document.createElement("div");
     commandContainer.style.textAlign = "left";
-    commandContainer.style.margin = "8px 0 0 0";
+    commandContainer.style.marginLeft = "12px";
     commandContainer.style.fontSize = "0.9rem";
     commandContainer.style.wordBreak = "break-word";
     commandContainer.style.width = "100%";
@@ -227,7 +266,7 @@ window.addEventListener("message", (event) => {
         console.error("Received invalid gestures data:", message.data);
 
         // Show error in UI
-        const container = document.getElementById("gesture-list");
+        const container = document.getElementById("gesture-container");
         if (container) {
           container.innerHTML = `
             <div style="text-align: center; margin-top: 32px; font-style: italic; color: var(--vscode-disabledForeground, #888);">
