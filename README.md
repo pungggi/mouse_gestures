@@ -2,6 +2,8 @@
 
 The first extension with enhanced mouse gesture support for Visual Studio Code. Execute commands by performing mouse gestures in the gesture pad.
 
+Any [feedback](https://ngsoftware.canny.io/requests) is welcome.
+
 ## Features
 
 - Execute VS Code commands using mouse gestures
