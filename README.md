@@ -9,7 +9,7 @@ Any [feedback](https://ngsoftware.canny.io/requests) is welcome.
 - Execute VS Code commands using mouse gestures
 - Configure custom gesture-to-command mappings
 - Support for sequential and parallel command execution
-- Support for complex gesture patterns using regular expressions
+- Support for mouse button click or mouse wheel action
 - View all configured gestures with the "Mouse Gestures: Show Cheat Sheet" command
 - Assign commands to unrecognized gestures with a simple prompt here is an example:
   ![Gesture Pad Interface](https://i.imgur.com/w8IptDb.gif)
