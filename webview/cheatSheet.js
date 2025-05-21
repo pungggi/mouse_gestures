@@ -38,12 +38,57 @@ function renderGestures(gestures) {
   grid.style.marginTop = "16px";
   grid.style.padding = "10px";
 
-  // Sort gestures by complexity (length of gesture string)
-  gestures.sort((a, b) => a.gesture.length - b.gesture.length);
+  // Create an object to hold gestures grouped by their `group` field
+  const groupedGestures = {};
+  const defaultGroupName = "Ungrouped";
 
+  // Iterate through the `gestures` array
   gestures.forEach((gestureConfig) => {
-    // Check if this is a wheel gesture
-    const isWheelGesture = gestureConfig.inputType === "wheel";
+    // Determine the group key
+    const groupKey = gestureConfig.group && typeof gestureConfig.group === 'string' && gestureConfig.group.trim() !== ''
+      ? gestureConfig.group.trim()
+      : defaultGroupName;
+
+    // Add the `gestureConfig` to the corresponding group
+    if (!groupedGestures[groupKey]) {
+      groupedGestures[groupKey] = [];
+    }
+    groupedGestures[groupKey].push(gestureConfig);
+  });
+
+  // Get the sorted list of group keys, ensuring "Ungrouped" is last
+  const groupKeys = Object.keys(groupedGestures).sort((a, b) => {
+    if (a === defaultGroupName) return 1;
+    if (b === defaultGroupName) return -1;
+    return a.localeCompare(b);
+  });
+
+  // Iterate through the sorted group keys
+  groupKeys.forEach(groupKey => {
+    const gesturesInGroup = groupedGestures[groupKey];
+
+    // Sort gestures within this group by complexity
+    gesturesInGroup.sort((a, b) => a.gesture.length - b.gesture.length);
+
+    // Create and append a heading element for the group name
+    const groupHeading = document.createElement("h2");
+    groupHeading.textContent = groupKey;
+    groupHeading.style.fontSize = "1.1rem";
+    groupHeading.style.marginTop = "20px";
+    groupHeading.style.marginBottom = "10px";
+    groupHeading.style.color = "var(--vscode-editor-foreground)";
+    container.appendChild(groupHeading);
+
+    // Create a new grid container for the gestures in the current group
+    const groupGrid = document.createElement("div");
+    groupGrid.style.display = "grid";
+    groupGrid.style.gridTemplateColumns = "repeat(auto-fill, minmax(200px, 1fr))";
+    groupGrid.style.gap = "20px";
+    groupGrid.style.padding = "10px";
+
+    gesturesInGroup.forEach((gestureConfig) => {
+      // Check if this is a wheel gesture
+      const isWheelGesture = gestureConfig.inputType === "wheel";
 
     // Create card for each gesture
     const card = document.createElement("div");
@@ -172,10 +217,10 @@ function renderGestures(gestures) {
     card.style.cursor = "pointer";
 
     // Add card to grid
-    grid.appendChild(card);
+      groupGrid.appendChild(card);
+    });
+    container.appendChild(groupGrid);
   });
-
-  container.appendChild(grid);
 }
 
 // Function to visualize gesture

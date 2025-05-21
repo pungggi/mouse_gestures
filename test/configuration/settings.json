@@ -23,7 +23,8 @@
                     "command": "workbench.action.terminal.kill",
                     "description": ""
                 }
-            ]
+            ],
+            "group": "Example Group"
         },
         {
             "gesture": "U",
