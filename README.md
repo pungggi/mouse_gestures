@@ -185,6 +185,27 @@ Some examples:
   - `"middle"`: Applies to middle mouse button gestures.
   - `"right"`: Applies to right mouse button gestures.
 
+- `when`: A condition, similar to VS Code's 'when' clauses, that must be true for the gesture to be active. This allows you to scope gestures to specific contexts.
+  - Examples: `"editorLangId == python"` (gesture active when editing a Python file), `"terminalFocus && editorLangId == typescript"` (gesture active when the terminal has focus and a TypeScript file is being edited).
+  - If omitted, the gesture is considered global and will be active in any context.
+  - **Available Context Keys**: The extension checks the following context keys:
+    - `editorLangId` (string, e.g., 'python', 'javascript')
+    - `resourceScheme` (string, e.g., 'file', 'untitled')
+    - `resourceFilename` (string, e.g., 'myFile.txt')
+    - `resourceExtname` (string, e.g., '.txt', '.js')
+    - `isUntitled` (boolean)
+    - `editorFocus` (boolean)
+    - `terminalFocus` (boolean)
+    - `inDebugMode` (boolean)
+  - **Operators and Evaluation Order**:
+    - The extension supports the following operators: `!` (NOT), `==` (equals), `!=` (not equals), `=~` (regex match), `&&` (AND), `||` (OR).
+    - Conditions are evaluated in a specific order: `!` (NOT) is highest, then `==`, `!=`, `=~`, then `&&` (AND), and finally `||` (OR).
+    - Complex, deeply nested parenthetical expressions for altering this specific order are not supported; please structure complex conditions accordingly or use multiple, simpler gesture entries if needed.
+  - **Regex Matching (`=~`)**:
+    - When using `=~`, the value on the right should be a string that can be parsed into a valid JavaScript regular expression (e.g., `'^foo'`, `'/bar/i'`).
+    - Invalid regex patterns will cause the condition to evaluate to false and an error will be logged to the console.
+  - For more general information about `when` clause contexts, you can refer to the [official VS Code `when` clause documentation](https://code.visualstudio.com/api/references/when-clause-contexts), but note that only the keys listed above are actively checked by this extension.
+
 - `actions`: Array of command objects, each containing:
   - `command`: The VS Code command ID to execute (required)
   - `description`: Optional description of what the command does

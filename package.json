@@ -135,6 +135,10 @@
                 "default": "left",
                 "description": "Specifies the mouse button this gesture applies to: 'left' (default), 'middle', or 'right'. This field is mandatory."
               },
+              "when": {
+                "type": "string",
+                "description": "A condition, similar to VS Code's 'when' clauses, that must be true for the gesture to be active. Examples: 'editorLangId == python', 'terminalFocus'. If omitted, the gesture is global."
+              },
               "actions": {
                 "type": "array",
                 "items": {
@@ -182,6 +186,12 @@
     "copy-webpack-plugin": "^13.0.0",
     "globals": "^16.0.0",
     "webpack": "^5.99.7",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "mocha": "^10.2.0",
+    "sinon": "^15.0.0",
+    "@vscode/test-electron": "^2.3.0"
+  },
+  "scripts": {
+    "test": "node ./test/runTest.js"
   }
 }
