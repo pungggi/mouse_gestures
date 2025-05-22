@@ -328,6 +328,45 @@ class GesturePadViewProvider {
     inputType,
     buttonStr
   ) {
+    // Split commands into contextual and global
+    const contextualCommands = commands.filter(
+      (cmd) => cmd._contextualPriority === true
+    );
+    const globalCommands = commands.filter(
+      (cmd) => cmd._contextualPriority === false
+    );
+
+    // First try to find a match in contextual commands
+    const contextualMatch = this._findGestureMatchInList(
+      gesture,
+      contextualCommands,
+      enablePatternMatching,
+      inputType,
+      buttonStr
+    );
+
+    if (contextualMatch) {
+      return contextualMatch;
+    }
+
+    // If no contextual match, try global commands
+    return this._findGestureMatchInList(
+      gesture,
+      globalCommands,
+      enablePatternMatching,
+      inputType,
+      buttonStr
+    );
+  }
+
+  // Helper method to find gesture matches in a specific list of commands
+  _findGestureMatchInList(
+    gesture,
+    commands,
+    enablePatternMatching,
+    inputType,
+    buttonStr
+  ) {
     // For wheel input, only match commands explicitly defined with inputType: "wheel"
     if (inputType === "wheel") {
       const wheelSpecificMatch = commands.find(
@@ -906,28 +945,29 @@ class GesturePadViewProvider {
   }
 
   _getContextualGestureCommands(allCommands, editorContext) {
-    const contextualCommands = [];
+    const result = [];
+
     // First pass: Collect commands with 'when' clauses that evaluate to true
     for (const command of allCommands) {
       if (command.when) {
         if (this._evaluateWhenClause(command.when, editorContext)) {
-          contextualCommands.push(command);
+          // Add contextual priority flag
+          const commandWithPriority = { ...command, _contextualPriority: true };
+          result.push(commandWithPriority);
         }
       }
     }
 
-    if (contextualCommands.length > 0) {
-      return contextualCommands;
-    }
-
-    // Second pass: Collect global commands (no 'when' clause)
-    const globalCommands = [];
+    // Second pass: Always collect global commands (no 'when' clause)
     for (const command of allCommands) {
       if (!command.when) {
-        globalCommands.push(command);
+        // Add as global (lower priority)
+        const commandWithPriority = { ...command, _contextualPriority: false };
+        result.push(commandWithPriority);
       }
     }
-    return globalCommands;
+
+    return result;
   }
 
   // Method to generate HTML content

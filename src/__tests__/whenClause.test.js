@@ -443,42 +443,77 @@ describe("GesturePadViewProvider._getContextualGestureCommands", () => {
     jest.resetModules();
   });
 
-  test("should return commands matching the context", () => {
-    const contextual = provider._getContextualGestureCommands(
+  test("should return both contextual and global commands with priority flags", () => {
+    const result = provider._getContextualGestureCommands(
       mockCommands,
       mockContext
     );
-    expect(contextual).toHaveLength(2);
-    expect(contextual.map((c) => c.gesture)).toEqual(
+
+    // Should return all commands (2 contextual + 1 global)
+    expect(result).toHaveLength(3);
+
+    // Check that contextual commands have priority flag set to true
+    const contextualCommands = result.filter(
+      (cmd) => cmd._contextualPriority === true
+    );
+    expect(contextualCommands).toHaveLength(2);
+    expect(contextualCommands.map((c) => c.gesture)).toEqual(
       expect.arrayContaining(["R", "U"])
     );
+
+    // Check that global commands have priority flag set to false
+    const globalCommands = result.filter(
+      (cmd) => cmd._contextualPriority === false
+    );
+    expect(globalCommands).toHaveLength(1);
+    expect(globalCommands[0].gesture).toBe("D");
   });
 
-  test("should return global commands if no contextual commands match", () => {
+  test("should return only global commands when no contextual commands match", () => {
     mockContext.editorLangId = "typescript"; // R won't match
     mockContext.editorFocus = false; // U won't match
-    const contextual = provider._getContextualGestureCommands(
+    const result = provider._getContextualGestureCommands(
       mockCommands,
       mockContext
     );
-    expect(contextual).toHaveLength(1);
-    expect(contextual[0].gesture).toBe("D");
+
+    // Should return only global commands
+    const contextualCommands = result.filter(
+      (cmd) => cmd._contextualPriority === true
+    );
+    expect(contextualCommands).toHaveLength(0);
+
+    const globalCommands = result.filter(
+      (cmd) => cmd._contextualPriority === false
+    );
+    expect(globalCommands).toHaveLength(1);
+    expect(globalCommands[0].gesture).toBe("D");
   });
 
-  test("should return specific contextual commands over global if both match criteria", () => {
-    // This test confirms the behavior of _getContextualGestureCommands:
-    // If contextual matches are found, only they are returned. Globals are a fallback.
+  test("should mark contextual commands with priority flag", () => {
     mockContext.editorLangId = "javascript"; // cmd1 matches
     mockContext.editorFocus = true; // cmd3 matches
     // cmd4 is global
-    const contextual = provider._getContextualGestureCommands(
+    const result = provider._getContextualGestureCommands(
       mockCommands,
       mockContext
     );
-    expect(contextual.map((c) => c.gesture)).toEqual(
+
+    // Check that contextual commands have priority flag
+    const contextualCommands = result.filter(
+      (cmd) => cmd._contextualPriority === true
+    );
+    expect(contextualCommands).toHaveLength(2);
+    expect(contextualCommands.map((c) => c.gesture)).toEqual(
       expect.arrayContaining(["R", "U"])
     );
-    expect(contextual.map((c) => c.gesture)).not.toContain("D");
+
+    // Check that global commands are also included but with lower priority
+    const globalCommands = result.filter(
+      (cmd) => cmd._contextualPriority === false
+    );
+    expect(globalCommands).toHaveLength(1);
+    expect(globalCommands[0].gesture).toBe("D");
   });
 
   test("should return empty array if no commands match and no global commands exist", () => {
@@ -492,11 +527,11 @@ describe("GesturePadViewProvider._getContextualGestureCommands", () => {
     ];
     mockContext.editorLangId = "javascript";
     mockContext.terminalFocus = false;
-    const contextual = provider._getContextualGestureCommands(
+    const result = provider._getContextualGestureCommands(
       mockCommands,
       mockContext
     );
-    expect(contextual).toHaveLength(0);
+    expect(result).toHaveLength(0);
   });
 
   test("should correctly use _evaluateWhenClause for filtering", () => {
