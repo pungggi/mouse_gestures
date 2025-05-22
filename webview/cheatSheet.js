@@ -103,37 +103,74 @@ function renderGestures(gestures) {
       if (isWheelGesture) {
         card.className = "wheel-gesture-card";
 
+        // Enhanced styling for wheel gestures
+        card.style.backgroundColor =
+          "var(--vscode-editor-inactiveSelectionBackground, rgba(58, 61, 65, 0.6))";
+        card.style.border =
+          "1px solid var(--vscode-panelSection-border, #80808059)";
+        card.style.borderLeft =
+          "4px solid var(--vscode-statusBarItem-warningBackground, #e9a700)";
+        card.style.borderRadius = "4px";
+        card.style.padding = "12px";
+        card.style.margin = "8px 0";
+        card.style.transition = "all 0.2s ease";
+        card.style.display = "flex";
+        card.style.flexDirection = "column";
+        card.style.alignItems = "center"; // Center content within cards
+        card.style.textAlign = "center"; // Center text within cards
+
         // Add hover effect for wheel gestures
         card.addEventListener("mouseenter", () => {
           card.style.transform = "translateY(-2px)";
           card.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+          card.style.backgroundColor =
+            "var(--vscode-editor-selectionBackground, rgba(58, 61, 65, 0.8))";
         });
 
         card.addEventListener("mouseleave", () => {
           card.style.transform = "translateY(0)";
           card.style.boxShadow = "none";
+          card.style.backgroundColor =
+            "var(--vscode-editor-inactiveSelectionBackground, rgba(58, 61, 65, 0.6))";
         });
       } else {
         card.className = "gesture-card"; // Use the class from CSS instead of inline styles
+
+        // Basic styling for regular gestures
+        card.style.backgroundColor = "var(--vscode-editor-background, #1e1e1e)";
+        card.style.border =
+          "1px solid var(--vscode-panelSection-border, #80808059)";
+        card.style.borderRadius = "4px";
+        card.style.padding = "12px";
+        card.style.margin = "8px 0";
+        card.style.transition = "all 0.2s ease";
+        card.style.display = "flex";
+        card.style.flexDirection = "column";
+        card.style.alignItems = "center"; // Center content within cards
+        card.style.textAlign = "center"; // Center text within cards
 
         // Add hover effect for non-wheel gestures
         card.addEventListener("mouseenter", () => {
           card.style.transform = "translateY(-2px)";
           card.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+          card.style.backgroundColor =
+            "var(--vscode-editor-hoverHighlightBackground, rgba(38, 79, 120, 0.25))";
         });
 
         card.addEventListener("mouseleave", () => {
           card.style.transform = "translateY(0)";
           card.style.boxShadow = "none";
+          card.style.backgroundColor =
+            "var(--vscode-editor-background, #1e1e1e)";
         });
       }
 
       // Add gesture name/pattern with appropriate styling
       const gestureName = document.createElement("div");
       gestureName.style.fontSize = "1rem";
-      gestureName.style.textAlign = "left";
-      gestureName.style.marginLeft = "12px";
+      gestureName.style.textAlign = "center"; // Center text for all gesture names
       gestureName.style.width = "100%";
+      gestureName.style.marginBottom = "10px";
 
       if (isWheelGesture) {
         // For wheel gestures, create a more elegant display
@@ -152,12 +189,19 @@ function renderGestures(gestures) {
         wheelIndicator.style.color =
           "var(--vscode-statusBarItem-warningBackground, #e9a700)";
         gestureName.appendChild(wheelIndicator);
+
+        // Additional styling for wheel gesture names
+        gestureName.style.fontWeight = "bold";
+        gestureName.style.color =
+          "var(--vscode-statusBarItem-warningBackground, #e9a700)";
+        gestureName.style.padding = "4px 8px";
+        gestureName.style.borderRadius = "4px";
+        gestureName.style.backgroundColor = "rgba(233, 167, 0, 0.1)";
       } else {
         gestureName.textContent = gestureConfig.gesture;
         gestureName.style.fontWeight = "bold";
         gestureName.style.color = "var(--vscode-textLink-foreground, #3794ff)";
         gestureName.style.marginBottom = "8px";
-
         gestureName.style.textTransform = "uppercase";
         gestureName.style.letterSpacing = "1px";
       }
@@ -178,11 +222,11 @@ function renderGestures(gestures) {
 
       // Add command container
       const commandContainer = document.createElement("div");
-      commandContainer.style.textAlign = "left";
-      commandContainer.style.marginLeft = "12px";
+      commandContainer.style.textAlign = "center"; // Center text for all commands
       commandContainer.style.fontSize = "0.9rem";
       commandContainer.style.wordBreak = "break-word";
       commandContainer.style.width = "100%";
+      commandContainer.style.padding = "0 8px";
 
       // Format commands based on execution mode
       const isParallel = gestureConfig.executionMode === "parallel";
@@ -194,7 +238,9 @@ function renderGestures(gestures) {
           : action.command.split(".").pop();
 
         const commandLine = document.createElement("div");
-        commandLine.style.marginBottom = "2px";
+        commandLine.style.marginBottom = "4px";
+        commandLine.style.textAlign = "center";
+        commandLine.style.padding = "2px 0";
 
         if (isParallel) {
           // For parallel commands: → command

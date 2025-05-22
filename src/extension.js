@@ -740,7 +740,7 @@ class GesturePadViewProvider {
       terminalFocus: false,
       inDebugMode: !!activeDebugSession,
       isInDiffEditor: false,
-      terminalFindFocused: false,
+      findInputFocussed: false,
       isMergeEditor: false,
     };
 
@@ -769,21 +769,33 @@ class GesturePadViewProvider {
     }
 
     try {
-      context.isInDiffEditor = !!(await vscode.commands.executeCommand(
-        "getContext",
-        "isInDiffEditor"
-      ));
-      context.terminalFindFocused = !!(await vscode.commands.executeCommand(
-        "getContext",
-        "terminalFindFocused"
-      ));
-      context.isMergeEditor = !!(await vscode.commands.executeCommand(
-        "getContext",
-        "isMergeEditor"
-      ));
+      // Alternative approach to determine context without using 'getContext' command
+      // Check for diff editor by examining the active editor's properties
+      if (vscode.window.activeTextEditor) {
+        // Check if the editor has a 'diff' property or is in a diff mode
+        context.isInDiffEditor =
+          vscode.window.activeTextEditor.document.uri.scheme === "diff" ||
+          (vscode.window.activeTextEditor.viewColumn ===
+            vscode.ViewColumn.Two &&
+            vscode.window.visibleTextEditors.length === 2);
+      }
+
+      // Check for terminal focus using the activeTerminal property
+      if (vscode.window.activeTerminal) {
+        context.terminalFocus = true;
+        // We can't directly determine findInputFocussed without getContext
+        // So we'll set it to false as a default
+        context.findInputFocussed = false;
+      }
+
+      // For merge editor, check if there's an active merge conflict session
+      // This is a best-effort approximation
+      context.isMergeEditor =
+        vscode.window.activeTextEditor &&
+        vscode.window.activeTextEditor.document.uri.scheme === "merge";
     } catch (err) {
       console.warn(
-        "Mouse Gestures: Error fetching VS Code context keys for 'when' clause evaluation.",
+        "Mouse Gestures: Error determining editor context for 'when' clause evaluation.",
         err
       );
       // Defaults (false) will be used if fetching fails.

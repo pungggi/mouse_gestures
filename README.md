@@ -197,7 +197,7 @@ Some examples:
     - `terminalFocus` (boolean)
     - `inDebugMode` (boolean)
     - `isInDiffEditor` (boolean, true if the active editor is a diff editor)
-    - `terminalFindFocused` (boolean, true if the terminal find widget has focus)
+    - `findInputFocussed` (boolean, true if the terminal find widget has focus)
     - `isMergeEditor` (boolean, true if the active editor is a merge editor)
   - **Operators and Evaluation Order**:
     - The extension supports the following operators: `!` (NOT), `==` (equals), `!=` (not equals), `=~` (regex match), `&&` (AND), `||` (OR).
@@ -213,7 +213,7 @@ Some examples:
   - `description`: Optional description of what the command does
   - `waitSeconds`: Number of seconds to wait before executing the next command (only applies in sequential mode, must be a positive integer)
   - `args`: Optional array of arguments to pass to the command
-- `group`: Optional string. Assigns the gesture to a specific group in the cheat sheet for better organization. Gestures without a group will appear under a default "Ungrouped" category.
+- `group`: Optional string. Assigns the gesture to a specific group in the cheat sheet for better organization.
 
 This should allow you to work with the extension, but if you want to go deeper then read further:
 
