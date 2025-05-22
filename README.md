@@ -52,7 +52,7 @@ You can override these defaults or add new gestures by configuring `mouseGesture
 
 ### Viewing Configured Gestures
 
-Use the "Mouse Gestures: Show Cheat Sheet" command from the command palette (Ctrl+Shift+P) to view all configured gestures in a visually organized cheat sheet. The cheat sheet displays:
+Use the "Mouse Gestures: Show Cheat Sheet" command from the command palette (Ctrl+Shift+P) to view all configured gestures in a visually organized cheat sheet. The cheat sheet now groups gestures by their associated command descriptions, making it easier to find and understand your configured gestures. The cheat sheet displays:
 
 - Gesture patterns with visual representations
 - Associated commands or descriptions
@@ -190,6 +190,7 @@ Some examples:
   - `description`: Optional description of what the command does
   - `waitSeconds`: Number of seconds to wait before executing the next command (only applies in sequential mode, must be a positive integer)
   - `args`: Optional array of arguments to pass to the command
+- `group`: Optional string. Assigns the gesture to a specific group in the cheat sheet for better organization. Gestures without a group will appear under a default "Ungrouped" category.
 
 This should allow you to work with the extension, but if you want to go deeper then read further:
 
