@@ -1,6 +1,6 @@
 // Extension entry point
-const vscode =require("vscode");
-const path = require('path');
+const vscode = require("vscode");
+const path = require("path");
 
 function activate(context) {
   // context here is ExtensionContext
@@ -597,8 +597,11 @@ class GesturePadViewProvider {
 
       const gesture = direction; // Use the direction code directly for command lookup
       const allGestureCommands = this._getGestureCommands();
-      const currentEditorContext = this._getCurrentEditorContext();
-      const contextualCommands = this._getContextualGestureCommands(allGestureCommands, currentEditorContext);
+      const currentEditorContext = await this._getCurrentEditorContext();
+      const contextualCommands = this._getContextualGestureCommands(
+        allGestureCommands,
+        currentEditorContext
+      );
       const config = vscode.workspace.getConfiguration("mouseGestures");
       const enablePatternMatching = config.get("enablePatternMatching");
 
@@ -724,100 +727,142 @@ class GesturePadViewProvider {
     }
   }
 
-  _getCurrentEditorContext() {
+  async _getCurrentEditorContext() {
     const activeEditor = vscode.window.activeTextEditor;
     const activeTerminal = vscode.window.activeTerminal;
     const activeDebugSession = vscode.debug.activeDebugSession;
 
     const context = {
       editorLangId: undefined,
-      resourceScheme: undefined,
       resourceFilename: undefined,
       resourceExtname: undefined,
-      isUntitled: undefined,
       editorFocus: false,
       terminalFocus: false,
       inDebugMode: !!activeDebugSession,
+      isInDiffEditor: false,
+      terminalFindFocused: false,
+      isMergeEditor: false,
     };
 
     if (activeEditor) {
       context.editorFocus = true;
       if (activeEditor.document) {
         context.editorLangId = activeEditor.document.languageId;
-        context.resourceScheme = activeEditor.document.uri.scheme;
-        if (activeEditor.document.uri.scheme === 'file') {
-          context.resourceFilename = path.basename(activeEditor.document.uri.fsPath);
+        // context.resourceScheme = activeEditor.document.uri.scheme; // Removed
+        if (activeEditor.document.uri.scheme === "file") {
+          context.resourceFilename = path.basename(
+            activeEditor.document.uri.fsPath
+          );
           context.resourceExtname = path.extname(context.resourceFilename);
         }
-        context.isUntitled = activeEditor.document.isUntitled;
+        // context.isUntitled = activeEditor.document.isUntitled; // Removed
       }
     }
 
     // Check if any of the visible terminals is the active one.
     // This is a proxy for terminal focus as direct focus check is complex.
-    if (activeTerminal && vscode.window.terminals.some(t => t === activeTerminal)) {
-        context.terminalFocus = true;
+    if (
+      activeTerminal &&
+      vscode.window.terminals.some((t) => t === activeTerminal)
+    ) {
+      context.terminalFocus = true;
+    }
+
+    try {
+      context.isInDiffEditor = !!(await vscode.commands.executeCommand(
+        "getContext",
+        "isInDiffEditor"
+      ));
+      context.terminalFindFocused = !!(await vscode.commands.executeCommand(
+        "getContext",
+        "terminalFindFocused"
+      ));
+      context.isMergeEditor = !!(await vscode.commands.executeCommand(
+        "getContext",
+        "isMergeEditor"
+      ));
+    } catch (err) {
+      console.warn(
+        "Mouse Gestures: Error fetching VS Code context keys for 'when' clause evaluation.",
+        err
+      );
+      // Defaults (false) will be used if fetching fails.
     }
 
     return context;
   }
 
   _evaluateWhenClause(whenClause, editorContext) {
-    if (whenClause === null || whenClause === undefined || whenClause.trim() === "") {
+    if (
+      whenClause === null ||
+      whenClause === undefined ||
+      whenClause.trim() === ""
+    ) {
       return true; // Empty clause means always active
     }
 
     try {
       // Split by OR operator first
-      const orGroups = whenClause.split('||');
+      const orGroups = whenClause.split("||");
       for (const orGroup of orGroups) {
         // Split by AND operator
-        const andConditions = orGroup.split('&&');
+        const andConditions = orGroup.split("&&");
         let andResult = true;
         for (const condition of andConditions) {
           let trimmedCondition = condition.trim();
           let negate = false;
 
-          if (trimmedCondition.startsWith('!')) {
+          if (trimmedCondition.startsWith("!")) {
             negate = true;
             trimmedCondition = trimmedCondition.substring(1).trim();
           }
 
           let result;
-          if (trimmedCondition.includes('==')) {
-            const parts = trimmedCondition.split('==', 2);
+          if (trimmedCondition.includes("==")) {
+            const parts = trimmedCondition.split("==", 2);
             const key = parts[0].trim();
             let value = parts[1].trim();
             // Remove quotes from value
-            if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+            if (
+              (value.startsWith("'") && value.endsWith("'")) ||
+              (value.startsWith('"') && value.endsWith('"'))
+            ) {
               value = value.substring(1, value.length - 1);
             }
             result = editorContext[key] === value;
-          } else if (trimmedCondition.includes('!=')) {
-            const parts = trimmedCondition.split('!=', 2);
+          } else if (trimmedCondition.includes("!=")) {
+            const parts = trimmedCondition.split("!=", 2);
             const key = parts[0].trim();
             let value = parts[1].trim();
             // Remove quotes from value
-            if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+            if (
+              (value.startsWith("'") && value.endsWith("'")) ||
+              (value.startsWith('"') && value.endsWith('"'))
+            ) {
               value = value.substring(1, value.length - 1);
             }
             result = editorContext[key] !== value;
-          } else if (trimmedCondition.includes('=~')) {
-            const parts = trimmedCondition.split('=~', 2);
+          } else if (trimmedCondition.includes("=~")) {
+            const parts = trimmedCondition.split("=~", 2);
             const key = parts[0].trim();
             const regexPattern = parts[1].trim();
             try {
               // Remove surrounding quotes from regex string if present
               let pattern = regexPattern;
-              if ((pattern.startsWith("'") && pattern.endsWith("'")) || 
-                  (pattern.startsWith('"') && pattern.endsWith('"')) ||
-                  (pattern.startsWith('/') && pattern.endsWith('/'))) {
-                   pattern = pattern.substring(1, pattern.length -1);
+              if (
+                (pattern.startsWith("'") && pattern.endsWith("'")) ||
+                (pattern.startsWith('"') && pattern.endsWith('"')) ||
+                (pattern.startsWith("/") && pattern.endsWith("/"))
+              ) {
+                pattern = pattern.substring(1, pattern.length - 1);
               }
               const regex = new RegExp(pattern);
               result = regex.test(String(editorContext[key]));
             } catch (e) {
-              console.error(`Mouse Gestures: Invalid regex in when clause '${trimmedCondition}':`, e);
+              console.error(
+                `Mouse Gestures: Invalid regex in when clause '${trimmedCondition}':`,
+                e
+              );
               result = false; // Error in regex, evaluate to false
             }
           } else {
@@ -840,7 +885,10 @@ class GesturePadViewProvider {
       }
       return false; // No OR group was true
     } catch (error) {
-      console.error(`Mouse Gestures: Error evaluating when clause '${whenClause}':`, error);
+      console.error(
+        `Mouse Gestures: Error evaluating when clause '${whenClause}':`,
+        error
+      );
       return false; // Default to false on error
     }
   }
@@ -961,5 +1009,5 @@ function deactivate() {}
 module.exports = {
   activate,
   deactivate,
-  GesturePadViewProvider // Export for testing
+  GesturePadViewProvider, // Export for testing
 };

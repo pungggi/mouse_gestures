@@ -186,17 +186,19 @@ Some examples:
   - `"right"`: Applies to right mouse button gestures.
 
 - `when`: A condition, similar to VS Code's 'when' clauses, that must be true for the gesture to be active. This allows you to scope gestures to specific contexts.
+
   - Examples: `"editorLangId == python"` (gesture active when editing a Python file), `"terminalFocus && editorLangId == typescript"` (gesture active when the terminal has focus and a TypeScript file is being edited).
   - If omitted, the gesture is considered global and will be active in any context.
   - **Available Context Keys**: The extension checks the following context keys:
     - `editorLangId` (string, e.g., 'python', 'javascript')
-    - `resourceScheme` (string, e.g., 'file', 'untitled')
     - `resourceFilename` (string, e.g., 'myFile.txt')
     - `resourceExtname` (string, e.g., '.txt', '.js')
-    - `isUntitled` (boolean)
     - `editorFocus` (boolean)
     - `terminalFocus` (boolean)
     - `inDebugMode` (boolean)
+    - `isInDiffEditor` (boolean, true if the active editor is a diff editor)
+    - `terminalFindFocused` (boolean, true if the terminal find widget has focus)
+    - `isMergeEditor` (boolean, true if the active editor is a merge editor)
   - **Operators and Evaluation Order**:
     - The extension supports the following operators: `!` (NOT), `==` (equals), `!=` (not equals), `=~` (regex match), `&&` (AND), `||` (OR).
     - Conditions are evaluated in a specific order: `!` (NOT) is highest, then `==`, `!=`, `=~`, then `&&` (AND), and finally `||` (OR).
