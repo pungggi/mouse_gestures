@@ -212,6 +212,33 @@ function renderGestures(gestures) {
 
       card.appendChild(commandContainer);
 
+      // Add context information if present
+      if (gestureConfig.when) {
+        const contextContainer = document.createElement("div");
+        contextContainer.style.textAlign = "left";
+        contextContainer.style.marginLeft = "12px";
+        contextContainer.style.marginTop = "8px";
+        contextContainer.style.fontSize = "0.8rem";
+        contextContainer.style.fontStyle = "italic";
+        contextContainer.style.color = "var(--vscode-descriptionForeground, #888)";
+        contextContainer.style.borderTop = "1px solid var(--vscode-widget-border, #444)";
+        contextContainer.style.paddingTop = "4px";
+        contextContainer.style.wordBreak = "break-word";
+
+        const contextLabel = document.createElement("div");
+        contextLabel.textContent = "Context: ";
+        contextLabel.style.fontWeight = "bold";
+        contextLabel.style.display = "inline";
+
+        const contextValue = document.createElement("span");
+        contextValue.textContent = gestureConfig.when;
+        contextValue.style.fontFamily = "monospace";
+
+        contextContainer.appendChild(contextLabel);
+        contextContainer.appendChild(contextValue);
+        card.appendChild(contextContainer);
+      }
+
       // Add click event listener to navigate to gesture definition
       card.addEventListener("click", () => {
         const messagePayload = {

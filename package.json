@@ -93,6 +93,46 @@
                   "description": "Toggle sidebar for complex gesture LRUDLR"
                 }
               ]
+            },
+            {
+              "gesture": "U",
+              "when": "editorTextFocus",
+              "actions": [
+                {
+                  "command": "editor.action.moveLinesUpAction",
+                  "description": "Move line up when in editor"
+                }
+              ]
+            },
+            {
+              "gesture": "U",
+              "when": "explorerViewletVisible && explorerViewletFocus",
+              "actions": [
+                {
+                  "command": "list.collapseAll",
+                  "description": "Collapse all in explorer when explorer is focused"
+                }
+              ]
+            },
+            {
+              "gesture": "D",
+              "when": "editorTextFocus",
+              "actions": [
+                {
+                  "command": "editor.action.moveLinesDownAction",
+                  "description": "Move line down when in editor"
+                }
+              ]
+            },
+            {
+              "gesture": "DR",
+              "when": "editorLangId == typescript || editorLangId == javascript",
+              "actions": [
+                {
+                  "command": "editor.action.goToDeclaration",
+                  "description": "Go to declaration in TypeScript/JavaScript files"
+                }
+              ]
             }
           ],
           "items": {
@@ -169,6 +209,10 @@
               "group": {
                 "type": "string",
                 "description": "Optional group name for organizing gestures in the cheat sheet."
+              },
+              "when": {
+                "type": "string",
+                "description": "Optional when clause context expression that determines when this gesture is active. Uses the same syntax as VS Code keyboard shortcuts. Examples: 'editorTextFocus', 'editorLangId == typescript', 'explorerViewletVisible && !inDebugMode'"
               }
             }
           },

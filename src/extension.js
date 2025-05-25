@@ -1,5 +1,6 @@
 // Extension entry point
 const vscode = require("vscode");
+const { ContextEvaluator } = require("./contextEvaluator");
 
 function activate(context) {
   // context here is ExtensionContext
@@ -165,6 +166,7 @@ class GesturePadViewProvider {
     // Accept subscriptions
     this._extensionUri = extensionUri;
     this._subscriptions = subscriptions; // Store subscriptions
+    this._contextEvaluator = new ContextEvaluator();
   }
 
   resolveWebviewView(webviewView) {
@@ -320,7 +322,7 @@ class GesturePadViewProvider {
   }
 
   // Helper method to find gesture matches with optimized matching strategy
-  _findGestureMatch(
+  async _findGestureMatch(
     gesture,
     commands,
     enablePatternMatching,
@@ -329,86 +331,87 @@ class GesturePadViewProvider {
   ) {
     // For wheel input, only match commands explicitly defined with inputType: "wheel"
     if (inputType === "wheel") {
-      const wheelSpecificMatch = commands.find(
-        (gc) => gc.gesture === gesture && gc.inputType === "wheel"
-      );
-      if (wheelSpecificMatch) {
-        return wheelSpecificMatch;
+      for (const gc of commands) {
+        if (gc.gesture === gesture && gc.inputType === "wheel") {
+          if (await this._isContextMatch(gc)) {
+            return gc;
+          }
+        }
       }
       // No fallback to 'any' or unspecified inputType for wheel
       if (enablePatternMatching) {
-        return this._findPatternMatch(gesture, commands, inputType, buttonStr);
+        return await this._findPatternMatch(gesture, commands, inputType, buttonStr);
       }
       return null;
     }
 
-    let exactSpecificMatch = null;
-    if (inputType === "wheel") {
-      exactSpecificMatch = commands.find(
-        (gc) => gc.gesture === gesture && gc.inputType === inputType
-      );
-    } else {
-      exactSpecificMatch = commands.find(
-        (gc) =>
-          gc.gesture === gesture &&
-          gc.inputType === inputType &&
-          gc.button === buttonStr
-      );
-    }
-
-    if (exactSpecificMatch) {
-      return exactSpecificMatch;
+    // Try exact match with specific inputType and button, checking context
+    for (const gc of commands) {
+      if (inputType === "wheel") {
+        if (gc.gesture === gesture && gc.inputType === inputType) {
+          if (await this._isContextMatch(gc)) {
+            return gc;
+          }
+        }
+      } else {
+        if (gc.gesture === gesture && gc.inputType === inputType && gc.button === buttonStr) {
+          if (await this._isContextMatch(gc)) {
+            return gc;
+          }
+        }
+      }
     }
 
     // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
     if (buttonStr !== "left") {
-      const exactSpecificInputMatchLeft = commands.find(
-        (gc) =>
-          gc.gesture === gesture &&
-          gc.inputType === inputType &&
-          gc.button === "left"
-      );
-      if (exactSpecificInputMatchLeft) {
-        return exactSpecificInputMatchLeft;
+      for (const gc of commands) {
+        if (gc.gesture === gesture && gc.inputType === inputType && gc.button === "left") {
+          if (await this._isContextMatch(gc)) {
+            return gc;
+          }
+        }
       }
     }
 
     // Then try exact match with any/unspecified inputType and specific button
-    const exactSpecificButtonMatch = commands.find(
-      (gc) => gc.gesture === gesture && !gc.inputType && gc.button === buttonStr
-    );
-    if (exactSpecificButtonMatch) {
-      return exactSpecificButtonMatch;
+    for (const gc of commands) {
+      if (gc.gesture === gesture && !gc.inputType && gc.button === buttonStr) {
+        if (await this._isContextMatch(gc)) {
+          return gc;
+        }
+      }
     }
 
     // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
     if (buttonStr !== "left") {
-      const exactAnyMatchLeft = commands.find(
-        (gc) => gc.gesture === gesture && !gc.inputType && gc.button === "left"
-      );
-      if (exactAnyMatchLeft) {
-        return exactAnyMatchLeft;
+      for (const gc of commands) {
+        if (gc.gesture === gesture && !gc.inputType && gc.button === "left") {
+          if (await this._isContextMatch(gc)) {
+            return gc;
+          }
+        }
       }
     }
 
     // Finally, try matches with unspecified button, defaulting to 'left'
-    const exactAnyMatch = commands.find(
-      (gc) => gc.gesture === gesture && !gc.inputType && !gc.button
-    );
-    if (exactAnyMatch) {
-      return exactAnyMatch;
+    for (const gc of commands) {
+      if (gc.gesture === gesture && !gc.inputType && !gc.button) {
+        if (await this._isContextMatch(gc)) {
+          return gc;
+        }
+      }
     }
 
     // Try pattern match last (most expensive)
     if (enablePatternMatching) {
-      return this._findPatternMatch(gesture, commands, inputType, buttonStr);
+      return await this._findPatternMatch(gesture, commands, inputType, buttonStr);
     }
 
     return null;
   }
 
   // Optimized pattern matching with caching
-  _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
+  async _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
     const patternCommands = gestureCommands.filter(
       (gc) => gc.matchType === "pattern"
     );
@@ -433,7 +436,7 @@ class GesturePadViewProvider {
             }
           }
 
-          if (regex.test(gesture)) {
+          if (regex.test(gesture) && await this._isContextMatch(command)) {
             return command;
           }
         }
@@ -462,7 +465,7 @@ class GesturePadViewProvider {
           }
         }
 
-        if (regex.test(gesture)) {
+        if (regex.test(gesture) && await this._isContextMatch(command)) {
           return command;
         }
       }
@@ -487,7 +490,7 @@ class GesturePadViewProvider {
             }
           }
 
-          if (regex.test(gesture)) {
+          if (regex.test(gesture) && await this._isContextMatch(command)) {
             return command;
           }
         }
@@ -512,7 +515,7 @@ class GesturePadViewProvider {
           }
         }
 
-        if (regex.test(gesture)) {
+        if (regex.test(gesture) && await this._isContextMatch(command)) {
           return command;
         }
       }
@@ -537,7 +540,7 @@ class GesturePadViewProvider {
             }
           }
 
-          if (regex.test(gesture)) {
+          if (regex.test(gesture) && await this._isContextMatch(command)) {
             return command;
           }
         }
@@ -562,7 +565,7 @@ class GesturePadViewProvider {
           }
         }
 
-        if (regex.test(gesture)) {
+        if (regex.test(gesture) && await this._isContextMatch(command)) {
           return command;
         }
       }
@@ -588,6 +591,20 @@ class GesturePadViewProvider {
   // Cache for compiled regex patterns
   _patternCache = new Map();
 
+  // Helper method to check if a gesture command matches the current context
+  async _isContextMatch(gestureCommand) {
+    if (!gestureCommand.when) {
+      return true; // No context condition means always active
+    }
+
+    try {
+      return await this._contextEvaluator.evaluate(gestureCommand.when);
+    } catch (error) {
+      console.error(`Error evaluating context for gesture "${gestureCommand.gesture}":`, error);
+      return false; // Default to false on error
+    }
+  }
+
   // Method to handle gestures within the provider
   async _handleGesture(details) {
     try {
@@ -612,7 +629,7 @@ class GesturePadViewProvider {
         buttonStr = undefined; // Ignore button for wheel input
       }
 
-      const match = this._findGestureMatch(
+      const match = await this._findGestureMatch(
         gesture,
         gestureCommands,
         enablePatternMatching,

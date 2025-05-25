@@ -8,6 +8,7 @@ Any [feedback](https://ngsoftware.canny.io/requests) is welcome.
 
 - Execute VS Code commands using mouse gestures
 - Configure custom gesture-to-command mappings
+- **Context-aware gestures**: Same gesture can trigger different commands based on current context (editor focus, file type, etc.)
 - Support for sequential and parallel command execution
 - Support for mouse button click or mouse wheel action
 - View all configured gestures with the "Mouse Gestures: Show Cheat Sheet" command
@@ -60,6 +61,59 @@ Use the "Mouse Gestures: Show Cheat Sheet" command from the command palette (Ctr
 
 ![Gesture Cheat Sheet](https://i.imgur.com/nVsr0Lf.png)
 
+### Context-Aware Gestures
+
+The extension supports context-aware gestures using VS Code's "when clause" expressions. This allows the same gesture to trigger different commands based on the current context, such as:
+
+- Which editor is focused
+- What file type is open
+- Which view is visible
+- Current editor state (has selection, read-only, etc.)
+
+#### Examples of Context-Aware Gestures
+
+```jsonc
+{
+  // Same gesture "U" behaves differently based on context
+  "gesture": "U",
+  "when": "editorTextFocus",
+  "actions": [{
+    "command": "editor.action.moveLinesUpAction",
+    "description": "Move line up when in editor"
+  }]
+},
+{
+  "gesture": "U",
+  "when": "explorerViewletVisible && explorerViewletFocus",
+  "actions": [{
+    "command": "list.collapseAll",
+    "description": "Collapse all in explorer when explorer is focused"
+  }]
+},
+{
+  // Language-specific gesture
+  "gesture": "DR",
+  "when": "editorLangId == typescript || editorLangId == javascript",
+  "actions": [{
+    "command": "editor.action.goToDeclaration",
+    "description": "Go to declaration in TypeScript/JavaScript files"
+  }]
+}
+```
+
+#### Available Context Keys
+
+You can use any of VS Code's built-in context keys in your `when` expressions:
+
+- **Editor contexts**: `editorTextFocus`, `editorLangId`, `editorHasSelection`, `editorReadonly`
+- **File contexts**: `resourceFilename`, `resourceExtname`, `resourceScheme`
+- **View contexts**: `explorerViewletVisible`, `sideBarFocus`, `panelFocus`
+- **Language contexts**: `editorLangId == 'typescript'`, `editorLangId == 'python'`
+- **Configuration**: `config.editor.minimap.enabled`
+- **Logical operators**: `&&` (and), `||` (or), `!` (not)
+
+For a complete list of available context keys, see the [VS Code documentation](https://code.visualstudio.com/api/references/when-clause-contexts).
+
 ## Configuration
 
 Some examples:
@@ -73,6 +127,27 @@ Some examples:
       {
         "command": "workbench.action.nextEditor",
         "description": "Switch to next editor"
+      }
+    ]
+  },
+  {
+    // Context-aware gesture - same gesture, different behavior
+    "gesture": "U",
+    "when": "editorTextFocus",
+    "actions": [
+      {
+        "command": "editor.action.moveLinesUpAction",
+        "description": "Move line up when in editor"
+      }
+    ]
+  },
+  {
+    "gesture": "U",
+    "when": "explorerViewletFocus",
+    "actions": [
+      {
+        "command": "list.collapseAll",
+        "description": "Collapse all when explorer focused"
       }
     ]
   },
