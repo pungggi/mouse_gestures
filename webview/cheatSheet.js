@@ -214,9 +214,21 @@ function renderGestures(gestures) {
 
       // Add click event listener to navigate to gesture definition
       card.addEventListener("click", () => {
+        // Get the first action's description for more precise searching
+        const firstAction = gestureConfig.actions && gestureConfig.actions[0];
+        const actionDescription =
+          firstAction &&
+          firstAction.description &&
+          firstAction.description.trim();
+
         const messagePayload = {
           command: "navigateToGesture",
           gestureId: gestureConfig.gesture,
+          inputType: gestureConfig.inputType || "any",
+          group: gestureConfig.group || null,
+          // Add action info for more precise searching
+          actionDescription: actionDescription || null,
+          actionCommand: (firstAction && firstAction.command) || null,
         };
         vscode.postMessage(messagePayload);
       });

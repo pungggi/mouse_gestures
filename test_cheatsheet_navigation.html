@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheat Sheet Navigation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .gesture-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .gesture-card:hover {
+            background: #e9e9e9;
+        }
+        .gesture-name {
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 5px;
+        }
+        .gesture-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .search-result {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .error {
+            background: #ffe8e8;
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cheat Sheet Navigation Test</h1>
+    
+    <div class="test-container">
+        <h2>Test Gestures (Click to simulate navigation)</h2>
+        <p>These simulate the gesture cards from the cheat sheet. Click them to see what search string would be generated.</p>
+        
+        <div class="gesture-card" onclick="testNavigation('U', 'any', 'Example Group')">
+            <div class="gesture-name">U</div>
+            <div class="gesture-details">InputType: any (default) | Group: Example Group</div>
+        </div>
+        
+        <div class="gesture-card" onclick="testNavigation('U', 'wheel', null)">
+            <div class="gesture-name">U</div>
+            <div class="gesture-details">InputType: wheel | Group: none</div>
+        </div>
+        
+        <div class="gesture-card" onclick="testNavigation('R', 'mouse', 'Navigation')">
+            <div class="gesture-name">R</div>
+            <div class="gesture-details">InputType: mouse | Group: Navigation</div>
+        </div>
+        
+        <div class="gesture-card" onclick="testNavigation('L', 'any', null)">
+            <div class="gesture-name">L</div>
+            <div class="gesture-details">InputType: any (default) | Group: none</div>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Generated Search Strings</h2>
+        <p>This shows what search string would be used to find the gesture in settings.json:</p>
+        <div id="results"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Sample settings.json Content</h2>
+        <p>This is what the search would look for in your settings.json:</p>
+        <pre style="background: #f0f0f0; padding: 15px; border-radius: 4px; overflow-x: auto;">
+{
+    "mouseGestures.gestureCommands": [
+        {
+            "gesture": "U",
+            "button": "left",
+            "executionMode": "sequential",
+            "actions": [
+                {
+                    "command": "workbench.action.terminal.newWithCwd",
+                    "description": ""
+                }
+            ],
+            "group": "Example Group"
+        },
+        {
+            "gesture": "U",
+            "inputType": "wheel",
+            "actions": [
+                {
+                    "command": "editor.unfoldAll",
+                    "description": "unfold"
+                }
+            ]
+        },
+        {
+            "gesture": "R",
+            "inputType": "mouse",
+            "actions": [
+                {
+                    "command": "workbench.action.nextEditor",
+                    "description": "Switch to next editor"
+                }
+            ],
+            "group": "Navigation"
+        },
+        {
+            "gesture": "L",
+            "actions": [
+                {
+                    "command": "workbench.action.previousEditor",
+                    "description": "Switch to previous editor"
+                }
+            ]
+        }
+    ]
+}
+        </pre>
+    </div>
+
+    <script>
+        function testNavigation(gestureId, inputType, group) {
+            // Simulate the message payload that would be sent from the cheat sheet
+            const messagePayload = {
+                command: "navigateToGesture",
+                gestureId: gestureId,
+                inputType: inputType || "any",
+                group: group || null,
+            };
+            
+            // Simulate the search string generation logic from extension.js
+            let searchString = `"gesture": "${messagePayload.gestureId}"`;
+            
+            // Add inputType to search if it's not "any" (default)
+            if (messagePayload.inputType && messagePayload.inputType !== "any") {
+                searchString += ` "inputType": "${messagePayload.inputType}"`;
+            }
+            
+            // Add group to search if it exists
+            if (messagePayload.group) {
+                searchString += ` "group": "${messagePayload.group}"`;
+            }
+            
+            // Display the result
+            const resultsDiv = document.getElementById('results');
+            const resultElement = document.createElement('div');
+            resultElement.className = 'search-result';
+            resultElement.innerHTML = `
+                <strong>Clicked:</strong> ${gestureId} (inputType: ${inputType || 'any'}, group: ${group || 'none'})<br>
+                <strong>Search String:</strong> ${searchString}<br>
+                <strong>Fallback Search:</strong> "${gestureId}"
+            `;
+            
+            // Add to top of results
+            resultsDiv.insertBefore(resultElement, resultsDiv.firstChild);
+            
+            // Limit to 5 results
+            while (resultsDiv.children.length > 5) {
+                resultsDiv.removeChild(resultsDiv.lastChild);
+            }
+        }
+        
+        // Show initial message
+        document.getElementById('results').innerHTML = '<div style="color: #666; font-style: italic;">Click on gesture cards above to see search strings...</div>';
+    </script>
+</body>
+</html>
