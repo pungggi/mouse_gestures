@@ -115,27 +115,35 @@ function activate(context) {
                 );
               }
 
-              // Create a more specific search string combining gesture, inputType, and group
-              let searchString = `"gesture": "${message.gestureId}"`;
+              // Use a smart search approach: try action description first, then gesture
+              let searchText;
+              let isSearchingByDescription = false;
 
-              // Add inputType to search if it's not "any" (default)
-              if (message.inputType && message.inputType !== "any") {
-                searchString += ` "inputType": "${message.inputType}"`;
+              // Strategy 1: If we have an action description, search for that first
+              if (
+                message.actionDescription &&
+                message.actionDescription.length > 0
+              ) {
+                searchText = `"description": "${message.actionDescription}"`;
+                isSearchingByDescription = true;
+                console.log(
+                  `Searching by action description: ${message.actionDescription}`
+                );
+              } else {
+                // Strategy 2: Fallback to gesture search
+                searchText = `"gesture": "${message.gestureId}"`;
+                isSearchingByDescription = false;
+                console.log(`Searching by gesture name: ${message.gestureId}`);
               }
 
-              // Add group to search if it exists
-              if (message.group) {
-                searchString += ` "group": "${message.group}"`;
-              }
-
-              // Start the find action with our search text
+              // Start the find action
               await vscode.commands.executeCommand("actions.find");
 
-              // Set the search text in the find widget
+              // Set the search text (plain text, not regex)
               await vscode.commands.executeCommand(
                 "editor.actions.findWithArgs",
                 {
-                  searchString: searchString,
+                  searchString: searchText,
                   isRegex: false,
                   matchCase: false,
                   matchWholeWord: false,
@@ -143,42 +151,143 @@ function activate(context) {
                 }
               );
 
-              // Jump to the next match
+              // Find the best match by checking context
               let matchFound = false;
+              let attempts = 0;
+              const maxAttempts = 20;
+
               try {
                 await vscode.commands.executeCommand(
                   "editor.action.nextMatchFindAction"
                 );
-                matchFound = true;
+
+                while (attempts < maxAttempts) {
+                  const editor = vscode.window.activeTextEditor;
+                  if (!editor) break;
+
+                  const position = editor.selection.active;
+                  const line = editor.document.lineAt(position.line);
+                  const lineText = line.text.trim();
+
+                  // Skip commented lines
+                  if (lineText.startsWith("//")) {
+                    attempts++;
+                    try {
+                      await vscode.commands.executeCommand(
+                        "editor.action.nextMatchFindAction"
+                      );
+                      continue;
+                    } catch {
+                      break; // No more matches
+                    }
+                  }
+
+                  if (isSearchingByDescription) {
+                    // When searching by description, we found the exact action
+                    // Just verify it's not commented and we're done
+                    matchFound = true;
+                    console.log(`Found exact match by action description`);
+                    break;
+                  } else {
+                    // When searching by gesture, use the original context analysis
+                    // Check the context around this match (next 15 lines)
+                    const startLine = position.line;
+                    const endLine = Math.min(
+                      editor.document.lineCount - 1,
+                      position.line + 15
+                    );
+                    let contextText = "";
+
+                    for (let i = startLine; i <= endLine; i++) {
+                      contextText += editor.document.lineAt(i).text + "\n";
+                    }
+
+                    // Score this match based on how well it matches our criteria
+                    let score = 1; // Base score for finding the gesture
+                    let isValidMatch = true;
+
+                    // Check inputType matching
+                    if (message.inputType && message.inputType !== "any") {
+                      if (
+                        contextText.includes(
+                          `"inputType": "${message.inputType}"`
+                        )
+                      ) {
+                        score += 10; // Exact inputType match
+                      } else if (contextText.includes('"inputType":')) {
+                        // Has different inputType, this is probably not our match
+                        isValidMatch = false;
+                      } else {
+                        // No inputType specified, could be our match if inputType is "mouse" or "any"
+                        if (
+                          message.inputType === "mouse" ||
+                          message.inputType === "any"
+                        ) {
+                          score += 5; // Partial match
+                        } else {
+                          isValidMatch = false;
+                        }
+                      }
+                    } else {
+                      // We're looking for "any" inputType, prefer matches without explicit inputType
+                      if (!contextText.includes('"inputType":')) {
+                        score += 5;
+                      }
+                    }
+
+                    // Check group matching
+                    if (message.group) {
+                      if (contextText.includes(`"group": "${message.group}"`)) {
+                        score += 10; // Exact group match
+                      } else {
+                        score -= 5; // Group mismatch
+                      }
+                    }
+
+                    // If this is a valid match with decent score, use it
+                    if (isValidMatch && score >= 5) {
+                      matchFound = true;
+                      console.log(`Found gesture match with score: ${score}`);
+                      break;
+                    }
+                  }
+
+                  // Try next match
+                  attempts++;
+                  try {
+                    await vscode.commands.executeCommand(
+                      "editor.action.nextMatchFindAction"
+                    );
+                  } catch {
+                    break; // No more matches
+                  }
+                }
               } catch (error) {
-                console.warn("No match found for specific search, trying fallback");
+                console.warn("Search failed:", error.message);
               }
 
-              // If no match found with the specific search, fall back to just the gesture name
+              // If no match found, show appropriate message
               if (!matchFound) {
-                await vscode.commands.executeCommand(
-                  "editor.actions.findWithArgs",
-                  {
-                    searchString: `"${message.gestureId}"`,
-                    isRegex: false,
-                    matchCase: false,
-                    matchWholeWord: true,
-                    preserveCase: false,
+                if (isSearchingByDescription) {
+                  if (attempts >= maxAttempts) {
+                    vscode.window.showWarningMessage(
+                      `Found action description "${message.actionDescription}" but all matches appear to be commented out.`
+                    );
+                  } else {
+                    vscode.window.showErrorMessage(
+                      `Could not find action description "${message.actionDescription}" in settings.json.`
+                    );
                   }
-                );
-
-                try {
-                  await vscode.commands.executeCommand(
-                    "editor.action.nextMatchFindAction"
-                  );
-                  // Show a warning that we fell back to a less specific search
-                  vscode.window.showWarningMessage(
-                    `Could not find exact match for gesture "${message.gestureId}" with inputType "${message.inputType}"${message.group ? ` and group "${message.group}"` : ""}. Showing all occurrences of "${message.gestureId}".`
-                  );
-                } catch (fallbackError) {
-                  vscode.window.showErrorMessage(
-                    `Could not find gesture "${message.gestureId}" in settings.json.`
-                  );
+                } else {
+                  if (attempts >= maxAttempts) {
+                    vscode.window.showWarningMessage(
+                      `Found gesture "${message.gestureId}" but all matches appear to be commented out or don't match the criteria.`
+                    );
+                  } else {
+                    vscode.window.showErrorMessage(
+                      `Could not find gesture "${message.gestureId}" in settings.json.`
+                    );
+                  }
                 }
               }
 
