@@ -115,6 +115,19 @@ function activate(context) {
                 );
               }
 
+              // Create a more specific search string combining gesture, inputType, and group
+              let searchString = `"gesture": "${message.gestureId}"`;
+
+              // Add inputType to search if it's not "any" (default)
+              if (message.inputType && message.inputType !== "any") {
+                searchString += ` "inputType": "${message.inputType}"`;
+              }
+
+              // Add group to search if it exists
+              if (message.group) {
+                searchString += ` "group": "${message.group}"`;
+              }
+
               // Start the find action with our search text
               await vscode.commands.executeCommand("actions.find");
 
@@ -122,18 +135,52 @@ function activate(context) {
               await vscode.commands.executeCommand(
                 "editor.actions.findWithArgs",
                 {
-                  searchString: `"${message.gestureId}"`,
+                  searchString: searchString,
                   isRegex: false,
                   matchCase: false,
-                  matchWholeWord: true,
+                  matchWholeWord: false,
                   preserveCase: false,
                 }
               );
 
               // Jump to the next match
-              await vscode.commands.executeCommand(
-                "editor.action.nextMatchFindAction"
-              );
+              let matchFound = false;
+              try {
+                await vscode.commands.executeCommand(
+                  "editor.action.nextMatchFindAction"
+                );
+                matchFound = true;
+              } catch (error) {
+                console.warn("No match found for specific search, trying fallback");
+              }
+
+              // If no match found with the specific search, fall back to just the gesture name
+              if (!matchFound) {
+                await vscode.commands.executeCommand(
+                  "editor.actions.findWithArgs",
+                  {
+                    searchString: `"${message.gestureId}"`,
+                    isRegex: false,
+                    matchCase: false,
+                    matchWholeWord: true,
+                    preserveCase: false,
+                  }
+                );
+
+                try {
+                  await vscode.commands.executeCommand(
+                    "editor.action.nextMatchFindAction"
+                  );
+                  // Show a warning that we fell back to a less specific search
+                  vscode.window.showWarningMessage(
+                    `Could not find exact match for gesture "${message.gestureId}" with inputType "${message.inputType}"${message.group ? ` and group "${message.group}"` : ""}. Showing all occurrences of "${message.gestureId}".`
+                  );
+                } catch (fallbackError) {
+                  vscode.window.showErrorMessage(
+                    `Could not find gesture "${message.gestureId}" in settings.json.`
+                  );
+                }
+              }
 
               return;
           }

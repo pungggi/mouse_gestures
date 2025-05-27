@@ -217,6 +217,8 @@ function renderGestures(gestures) {
         const messagePayload = {
           command: "navigateToGesture",
           gestureId: gestureConfig.gesture,
+          inputType: gestureConfig.inputType || "any",
+          group: gestureConfig.group || null,
         };
         vscode.postMessage(messagePayload);
       });
