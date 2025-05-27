@@ -115,9 +115,8 @@ function activate(context) {
                 );
               }
 
-              // Use a smart search approach: try action description first, then gesture
-              let searchText;
-              let isSearchingByDescription = false;
+              let searchText; // eslint-disable-line no-case-declarations
+              let isSearchingByDescription = false; // eslint-disable-line no-case-declarations
 
               // Strategy 1: If we have an action description, search for that first
               if (
@@ -151,10 +150,9 @@ function activate(context) {
                 }
               );
 
-              // Find the best match by checking context
-              let matchFound = false;
-              let attempts = 0;
-              const maxAttempts = 20;
+              let matchFound = false; // eslint-disable-line no-case-declarations
+              let attempts = 0; // eslint-disable-line no-case-declarations
+              const maxAttempts = 20; // eslint-disable-line no-case-declarations
 
               try {
                 await vscode.commands.executeCommand(
