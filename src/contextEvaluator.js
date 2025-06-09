@@ -291,7 +291,7 @@ class ContextEvaluator {
           return false;
         }
       
-      case 'in':
+      case 'in': {
         const inValue = this._getContextValue(rightValue);
         if (Array.isArray(inValue)) {
           return inValue.includes(leftValue);
@@ -299,8 +299,8 @@ class ContextEvaluator {
           return leftValue in inValue;
         }
         return false;
-      
-      case 'not in':
+      }
+      case 'not in': {
         const notInValue = this._getContextValue(rightValue);
         if (Array.isArray(notInValue)) {
           return !notInValue.includes(leftValue);
@@ -308,6 +308,7 @@ class ContextEvaluator {
           return !(leftValue in notInValue);
         }
         return true;
+      }
       
       default:
         console.error(`Unknown comparison operator: ${operator}`);
