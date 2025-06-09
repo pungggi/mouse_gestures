@@ -1,5 +1,6 @@
 // Context evaluator for when clause expressions
 const vscode = require("vscode");
+const path = require("path");
 
 /**
  * Evaluates when clause expressions similar to VS Code's keyboard shortcuts
@@ -57,11 +58,11 @@ class ContextEvaluator {
       if (activeEditor) {
         this._contextCache.set('editorHasSelection', !activeEditor.selection.isEmpty);
         this._contextCache.set('editorHasMultipleSelections', activeEditor.selections.length > 1);
-        this._contextCache.set('editorReadonly', activeEditor.document.isUntitled ? false : activeEditor.document.uri.scheme === 'untitled');
+        this._contextCache.set('editorReadonly', activeEditor.document.isReadonly);
         this._contextCache.set('editorLangId', activeEditor.document.languageId);
         this._contextCache.set('resourceScheme', activeEditor.document.uri.scheme);
-        this._contextCache.set('resourceFilename', activeEditor.document.fileName.split('/').pop());
-        this._contextCache.set('resourceExtname', activeEditor.document.fileName.split('.').pop());
+        this._contextCache.set('resourceFilename', path.basename(activeEditor.document.fileName));
+        this._contextCache.set('resourceExtname', path.extname(activeEditor.document.fileName));
         this._contextCache.set('resourceLangId', activeEditor.document.languageId);
         this._contextCache.set('isFileSystemResource', activeEditor.document.uri.scheme === 'file');
         this._contextCache.set('resourceSet', true);
@@ -183,6 +184,14 @@ class ContextEvaluator {
       return this._evaluateComparison(left.trim(), operator.trim(), right.trim());
     }
 
+    // Handle boolean literals
+    if (expression === "true") {
+      return true;
+    }
+    if (expression === "false") {
+      return false;
+    }
+
     // Handle simple context key
     const value = this._getContextValue(expression);
     return this._isTruthy(value);
@@ -198,10 +207,12 @@ class ContextEvaluator {
       if (end === -1) {
         throw new Error('Mismatched parentheses in expression');
       }
-      
+
       const innerExpression = expression.substring(start + 1, end);
       const result = this._evaluateExpression(innerExpression);
-      expression = expression.substring(0, start) + result + expression.substring(end + 1);
+      // Replace with string representation that will be recognized as boolean literal
+      const resultStr = result ? "true" : "false";
+      expression = expression.substring(0, start) + resultStr + expression.substring(end + 1);
     }
     return expression;
   }

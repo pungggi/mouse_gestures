@@ -96,6 +96,8 @@
             },
             {
               "gesture": "U",
+              "button": "left",
+              "inputType": "mouse",
               "when": "editorTextFocus",
               "actions": [
                 {
@@ -126,7 +128,7 @@
             },
             {
               "gesture": "DR",
-              "when": "editorLangId == typescript || editorLangId == javascript",
+              "when": "editorLangId == \"typescript\" || editorLangId == \"javascript\"",
               "actions": [
                 {
                   "command": "editor.action.goToDeclaration",

@@ -501,17 +501,9 @@ class GesturePadViewProvider {
 
     // Try exact match with specific inputType and button, checking context
     for (const gc of commands) {
-      if (inputType === "wheel") {
-        if (gc.gesture === gesture && gc.inputType === inputType) {
-          if (await this._isContextMatch(gc)) {
-            return gc;
-          }
-        }
-      } else {
-        if (gc.gesture === gesture && gc.inputType === inputType && gc.button === buttonStr) {
-          if (await this._isContextMatch(gc)) {
-            return gc;
-          }
+      if (gc.gesture === gesture && gc.inputType === inputType && gc.button === buttonStr) {
+        if (await this._isContextMatch(gc)) {
+          return gc;
         }
       }
     }
