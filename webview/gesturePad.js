@@ -27,6 +27,8 @@ let pathColor = "#cccccc";
 let pathThickness = 1;
 let enableGesturePreview = true;
 let gestureCommands = []; // Store gesture commands from configuration
+let overlayMode = false; // Track if we're in overlay mode
+let quickPadSettings = {}; // Store QuickPad specific settings
 
 console.log("Gesture Pad script loaded from external file.");
 
@@ -65,6 +67,22 @@ window.addEventListener("message", (event) => {
 
       // Apply settings to canvas context
       setupCanvasContext();
+    }
+
+    // Update overlay mode and QuickPad settings
+    if (message.overlayMode !== undefined) {
+      overlayMode = message.overlayMode;
+    }
+
+    if (message.quickPadSettings) {
+      quickPadSettings = message.quickPadSettings;
+
+      // Update hint visibility based on settings
+      const hintElement = document.getElementById("hint");
+      if (hintElement) {
+        hintElement.style.display =
+          quickPadSettings.showHint !== false ? "block" : "none";
+      }
     }
   }
 });
@@ -523,8 +541,25 @@ window.addEventListener("mouseup", () => {
     // Reset path for next gesture
     gesturePath = [];
   }
-  // Send a message to the extension indicating that the webview is ready
-  vscode.postMessage({
-    command: "webviewReady",
-  });
+});
+
+// Keyboard handling for overlay mode
+window.addEventListener("keydown", (e) => {
+  if (overlayMode && e.key === "Escape") {
+    e.preventDefault();
+    vscode.postMessage({
+      command: "cancelQuickPad",
+    });
+  }
+
+  // Optional: Enter to re-run last gesture (would need to store last gesture)
+  if (overlayMode && e.key === "Enter") {
+    e.preventDefault();
+    // Could implement re-running last gesture here if needed
+  }
+});
+
+// Send a message to the extension indicating that the webview is ready
+vscode.postMessage({
+  command: "webviewReady",
 });

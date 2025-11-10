@@ -7,6 +7,8 @@ function activate(context) {
 
   // Store panel reference for singleton pattern
   let cheatSheetPanel = undefined;
+  let quickPadPanel = undefined;
+  let quickPadContext = undefined;
 
   // Pass the extension's subscriptions array to the provider
   const provider = new GesturePadViewProvider(
@@ -305,6 +307,208 @@ function activate(context) {
         null,
         context.subscriptions
       );
+    }),
+    vscode.commands.registerCommand("mouseGestures.startQuickPad", async () => {
+      if (quickPadPanel) {
+        quickPadPanel.reveal(vscode.ViewColumn.Active);
+        return;
+      }
+
+      // Capture context before focus changes
+      quickPadContext = await provider._captureContext();
+
+      // Create ephemeral QuickPad panel
+      quickPadPanel = vscode.window.createWebviewPanel(
+        "mouseGesturesQuickPad",
+        "QuickPad",
+        vscode.ViewColumn.Active,
+        {
+          enableScripts: true,
+          localResourceRoots: [
+            vscode.Uri.joinPath(context.extensionUri, "webview"),
+            vscode.Uri.joinPath(
+              context.extensionUri,
+              process.env.DEV_MODE === "true" ? "src" : "dist/src"
+            ),
+            vscode.Uri.joinPath(
+              context.extensionUri,
+              process.env.DEV_MODE === "true" ? "src" : "dist"
+            ),
+          ],
+          retainContextWhenHidden: false,
+        }
+      );
+
+      // Get URIs for scripts
+      const nonce = getNonce();
+      const gestureRecognitionCoreUri = quickPadPanel.webview.asWebviewUri(
+        vscode.Uri.joinPath(
+          context.extensionUri,
+          process.env.DEV_MODE === "true" ? "src" : "dist/src",
+          "gestureRecognitionCore.js"
+        )
+      );
+      const gesturePadUri = quickPadPanel.webview.asWebviewUri(
+        vscode.Uri.joinPath(context.extensionUri, "webview", "gesturePad.js")
+      );
+
+      // Generate HTML for QuickPad overlay
+      quickPadPanel.webview.html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: rgba(37, 37, 37, 0.85); 
+            cursor: crosshair; 
+            font-family: var(--vscode-font-family);
+        }
+        #gesture-area { 
+            position: relative; 
+            width: 100%; 
+            height: 100%; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #path-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+        }
+        #hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+        .reticle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gesture-area">
+        <canvas id="path-canvas"></canvas>
+        <div class="reticle"></div>
+        <div id="hint">Draw a gesture • Press Escape to cancel</div>
+    </div>
+
+    <script nonce="${nonce}" src="${gestureRecognitionCoreUri}"></script>
+    <script nonce="${nonce}" src="${gesturePadUri}"></script>
+</body>
+</html>`;
+
+      // Send initial configuration
+      const config = vscode.workspace.getConfiguration("mouseGestures");
+      quickPadPanel.webview.postMessage({
+        command: "updateConfig",
+        visualSettings: {
+          pathColor: config.get("pathColor") || "#cccccc",
+          pathThickness: config.get("pathThickness") || 1,
+          showGesturePreview: config.get("showGesturePreview") !== false,
+        },
+        quickPadSettings: {
+          autoClose: config.get("quickPad.autoClose") !== false,
+          inactivityTimeoutMs:
+            config.get("quickPad.inactivityTimeoutMs") || 6000,
+          showHint: config.get("quickPad.showHint") !== false,
+        },
+        overlayMode: true,
+      });
+
+      // Setup message handling
+      const messageHandler = async (message) => {
+        if (message.command === "gestureDetected") {
+          // Close the panel FIRST to restore focus
+          if (config.get("quickPad.autoClose") !== false && quickPadPanel) {
+            quickPadPanel.dispose();
+            quickPadPanel = undefined;
+            quickPadContext = undefined;
+
+            // Wait a bit for focus to return to the original editor
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+
+          // THEN execute the command with focus restored
+          await provider._handleQuickPadGesture(
+            message.details || message,
+            quickPadContext
+          );
+        } else if (message.command === "cancelQuickPad") {
+          if (quickPadPanel) {
+            quickPadPanel.dispose();
+            quickPadPanel = undefined;
+            quickPadContext = undefined;
+          }
+        }
+      };
+
+      quickPadPanel.webview.onDidReceiveMessage(messageHandler);
+
+      // Auto-close on inactivity
+      const timeoutMs = config.get("quickPad.inactivityTimeoutMs") || 6000;
+      let timeoutHandle = setTimeout(() => {
+        if (quickPadPanel) {
+          quickPadPanel.dispose();
+          quickPadPanel = undefined;
+          quickPadContext = undefined;
+        }
+      }, timeoutMs);
+
+      // Reset timeout on any activity
+      const resetTimeout = () => {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = setTimeout(() => {
+          if (quickPadPanel) {
+            quickPadPanel.dispose();
+            quickPadPanel = undefined;
+            quickPadContext = undefined;
+          }
+        }, timeoutMs);
+      };
+
+      quickPadPanel.webview.onDidReceiveMessage(resetTimeout);
+
+      quickPadPanel.onDidDispose(() => {
+        clearTimeout(timeoutHandle);
+        quickPadPanel = undefined;
+        quickPadContext = undefined;
+      });
+    }),
+    vscode.commands.registerCommand("mouseGestures.cancelQuickPad", () => {
+      if (quickPadPanel) {
+        quickPadPanel.dispose();
+        quickPadPanel = undefined;
+        quickPadContext = undefined;
+      }
     })
   );
 }
@@ -321,6 +525,445 @@ class GesturePadViewProvider {
     this._extensionUri = extensionUri;
     this._subscriptions = subscriptions; // Store subscriptions
     this._contextEvaluator = new ContextEvaluator();
+  }
+
+  // Capture context snapshot for QuickPad
+  async _captureContext() {
+    const activeEditor = vscode.window.activeTextEditor;
+    const activeTerminal = vscode.window.activeTerminal;
+
+    return {
+      editorFocus: !!activeEditor,
+      editorLangId: activeEditor?.document?.languageId,
+      resourceScheme: activeEditor?.document?.uri?.scheme,
+      resourceFilename: activeEditor?.document?.fileName
+        ? require("path").basename(activeEditor.document.fileName)
+        : undefined,
+      terminalFocus: !!activeTerminal,
+      timestamp: Date.now(),
+    };
+  }
+
+  // Handle QuickPad gestures with context
+  async _handleQuickPadGesture(details, context) {
+    try {
+      const direction = details?.sequence;
+      if (!direction) return;
+
+      const gesture = direction;
+      const gestureCommands = this._getGestureCommands();
+      const config = vscode.workspace.getConfiguration("mouseGestures");
+      const enablePatternMatching = config.get("enablePatternMatching");
+
+      console.log(
+        `QuickPad: Processing gesture "${gesture}" with ${gestureCommands.length} commands`
+      );
+      console.log(`QuickPad: Captured context:`, context);
+
+      const inputType = details.inputType || "mouse";
+      let buttonStr = "left";
+      if (details.button === 0) buttonStr = "left";
+      else if (details.button === 1) buttonStr = "middle";
+      else if (details.button === 2) buttonStr = "right";
+
+      if (inputType === "wheel") {
+        buttonStr = undefined;
+      }
+
+      console.log(
+        `QuickPad: Looking for gesture="${gesture}", inputType="${inputType}", button="${buttonStr}"`
+      );
+
+      // Find gesture match with context awareness
+      const match = await this._findGestureMatchWithContext(
+        gesture,
+        gestureCommands,
+        enablePatternMatching,
+        inputType,
+        buttonStr,
+        context
+      );
+
+      console.log(
+        `QuickPad: Match found:`,
+        match ? `Yes (${match.gesture})` : "No"
+      );
+
+      if (!match) {
+        // Show context-aware prompt
+        const contextHint = context.editorFocus
+          ? context.editorLangId
+            ? ` in ${context.editorLangId} file`
+            : " in editor"
+          : context.terminalFocus
+          ? " in terminal"
+          : "";
+
+        const assignOption = "Assign Command";
+        const cancelOption = "Cancel";
+        let message = inputType === "wheel" ? "Wheel" : "Gesture";
+        message += ` '${gesture}'${contextHint} is not recognized. Assign a command?`;
+
+        const response = await vscode.window.showInformationMessage(
+          message,
+          assignOption,
+          cancelOption
+        );
+
+        if (response === assignOption) {
+          const selectedCommand = await this._selectCommand();
+          if (selectedCommand) {
+            const description = await vscode.window.showInputBox({
+              prompt: "Enter a description for this gesture (optional):",
+              placeHolder: "Leave blank to skip",
+              ignoreFocusOut: true,
+            });
+
+            const newBinding = {
+              gesture: gesture,
+              inputType: inputType,
+              button: buttonStr,
+              actions: [
+                { command: selectedCommand, description: description || "" },
+              ],
+              // Add context condition based on where QuickPad was invoked
+              when: context.editorFocus
+                ? context.editorLangId
+                  ? `editorLangId == "${context.editorLangId}"`
+                  : "editorTextFocus"
+                : context.terminalFocus
+                ? "terminalFocus"
+                : undefined,
+            };
+
+            // Update settings
+            const currentBindings = config.get("gestureCommands") || [];
+            const updatedBindings = [...currentBindings, newBinding];
+
+            try {
+              await config.update(
+                "gestureCommands",
+                updatedBindings,
+                vscode.ConfigurationTarget.Global
+              );
+              this._updateConfigCache();
+            } catch (error) {
+              console.error("Error updating gesture bindings:", error);
+              vscode.window.showErrorMessage(
+                `Failed to update gesture bindings: ${error.message}`
+              );
+            }
+          }
+        }
+        return;
+      }
+
+      console.log(
+        `QuickPad: Executing commands for gesture "${match.gesture}":`,
+        match.actions
+      );
+      await this._executeCommands(match);
+      console.log(`QuickPad: Commands executed successfully`);
+    } catch (error) {
+      console.error("Error handling QuickPad gesture:", error);
+      vscode.window.showErrorMessage(
+        `Error processing gesture: ${error.message}`
+      );
+    }
+  }
+
+  // Find gesture match with context awareness using captured context
+  async _findGestureMatchWithContext(
+    gesture,
+    commands,
+    enablePatternMatching,
+    inputType,
+    buttonStr,
+    capturedContext
+  ) {
+    // For wheel input, only match commands explicitly defined with inputType: "wheel"
+    if (inputType === "wheel") {
+      for (const gc of commands) {
+        if (gc.gesture === gesture && gc.inputType === "wheel") {
+          if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+            return gc;
+          }
+        }
+      }
+      if (enablePatternMatching) {
+        return await this._findPatternMatchWithCaptured(
+          gesture,
+          commands,
+          inputType,
+          buttonStr,
+          capturedContext
+        );
+      }
+      return null;
+    }
+
+    // Try exact match with specific inputType and button, checking context
+    for (const gc of commands) {
+      if (
+        gc.gesture === gesture &&
+        gc.inputType === inputType &&
+        gc.button === buttonStr
+      ) {
+        if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+          return gc;
+        }
+      }
+    }
+
+    // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const gc of commands) {
+        if (
+          gc.gesture === gesture &&
+          gc.inputType === inputType &&
+          gc.button === "left"
+        ) {
+          if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+            return gc;
+          }
+        }
+      }
+    }
+
+    // Then try exact match with any/unspecified inputType and specific button
+    for (const gc of commands) {
+      if (gc.gesture === gesture && !gc.inputType && gc.button === buttonStr) {
+        if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+          return gc;
+        }
+      }
+    }
+
+    // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const gc of commands) {
+        if (gc.gesture === gesture && !gc.inputType && gc.button === "left") {
+          if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+            return gc;
+          }
+        }
+      }
+    }
+
+    // Finally, try matches with unspecified button, defaulting to 'left'
+    for (const gc of commands) {
+      if (gc.gesture === gesture && !gc.inputType && !gc.button) {
+        if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+          return gc;
+        }
+      }
+    }
+
+    // Try pattern match last (most expensive)
+    if (enablePatternMatching) {
+      return await this._findPatternMatchWithCaptured(
+        gesture,
+        commands,
+        inputType,
+        buttonStr,
+        capturedContext
+      );
+    }
+
+    return null;
+  }
+
+  // Check if gesture command matches using captured context instead of current context
+  async _isContextMatchWithCaptured(gestureCommand, capturedContext) {
+    if (!gestureCommand.when) {
+      return true; // No context condition means always active
+    }
+
+    // For simple editorLangId checks, use the captured context directly
+    const whenClause = gestureCommand.when.trim();
+
+    // Handle editorLangId == "language" pattern
+    const langIdMatch = whenClause.match(
+      /editorLangId\s*==\s*["']([^"']+)["']/
+    );
+    if (langIdMatch) {
+      const requiredLangId = langIdMatch[1];
+      return capturedContext.editorLangId === requiredLangId;
+    }
+
+    // Handle editorTextFocus
+    if (whenClause === "editorTextFocus") {
+      return capturedContext.editorFocus;
+    }
+
+    // Handle terminalFocus
+    if (whenClause === "terminalFocus") {
+      return capturedContext.terminalFocus;
+    }
+
+    // For complex when clauses, fall back to the context evaluator
+    // (which will check current state, not captured state)
+    try {
+      return await this._contextEvaluator.evaluate(gestureCommand.when);
+    } catch (error) {
+      console.error(
+        `Error evaluating context for gesture "${gestureCommand.gesture}":`,
+        error
+      );
+      return false;
+    }
+  }
+
+  // Pattern matching with captured context
+  async _findPatternMatchWithCaptured(
+    gesture,
+    gestureCommands,
+    inputType,
+    buttonStr,
+    capturedContext
+  ) {
+    const patternCommands = gestureCommands.filter(
+      (gc) => gc.matchType === "pattern"
+    );
+
+    // For wheel input, only match patterns explicitly defined with inputType: "wheel"
+    if (inputType === "wheel") {
+      for (const command of patternCommands) {
+        if (command.inputType === "wheel") {
+          try {
+            const regex = new RegExp(command.gesture);
+            if (
+              regex.test(gesture) &&
+              (await this._isContextMatchWithCaptured(command, capturedContext))
+            ) {
+              return command;
+            }
+          } catch (error) {
+            console.error(`Invalid regex pattern: ${command.gesture}`, error);
+          }
+        }
+      }
+      return null;
+    }
+
+    // Try pattern matches with specific inputType and specific button
+    for (const command of patternCommands) {
+      if (command.inputType === inputType && command.button === buttonStr) {
+        try {
+          const regex = new RegExp(command.gesture);
+          if (
+            regex.test(gesture) &&
+            (await this._isContextMatchWithCaptured(command, capturedContext))
+          ) {
+            return command;
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${command.gesture}`, error);
+        }
+      }
+    }
+
+    // Try with default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (command.inputType === inputType && command.button === "left") {
+          try {
+            const regex = new RegExp(command.gesture);
+            if (
+              regex.test(gesture) &&
+              (await this._isContextMatchWithCaptured(command, capturedContext))
+            ) {
+              return command;
+            }
+          } catch (error) {
+            console.error(`Invalid regex pattern: ${command.gesture}`, error);
+          }
+        }
+      }
+    }
+
+    // Try with any/unspecified inputType and specific button
+    for (const command of patternCommands) {
+      if (!command.inputType && command.button === buttonStr) {
+        try {
+          const regex = new RegExp(command.gesture);
+          if (
+            regex.test(gesture) &&
+            (await this._isContextMatchWithCaptured(command, capturedContext))
+          ) {
+            return command;
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${command.gesture}`, error);
+        }
+      }
+    }
+
+    // Try with any/unspecified inputType and default button 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (!command.inputType && command.button === "left") {
+          try {
+            const regex = new RegExp(command.gesture);
+            if (
+              regex.test(gesture) &&
+              (await this._isContextMatchWithCaptured(command, capturedContext))
+            ) {
+              return command;
+            }
+          } catch (error) {
+            console.error(`Invalid regex pattern: ${command.gesture}`, error);
+          }
+        }
+      }
+    }
+
+    // Finally, try matches with unspecified button
+    for (const command of patternCommands) {
+      if (!command.inputType && !command.button) {
+        try {
+          const regex = new RegExp(command.gesture);
+          if (
+            regex.test(gesture) &&
+            (await this._isContextMatchWithCaptured(command, capturedContext))
+          ) {
+            return command;
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${command.gesture}`, error);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // Pattern matching with context awareness
+  async _findPatternMatchWithContext(
+    gesture,
+    gestureCommands,
+    inputType,
+    buttonStr,
+    context
+  ) {
+    const patternCommands = gestureCommands.filter(
+      (gc) => gc.matchType === "pattern"
+    );
+
+    for (const command of patternCommands) {
+      if (command.inputType === inputType && command.button === buttonStr) {
+        try {
+          const regex = new RegExp(command.gesture);
+          if (regex.test(gesture) && (await this._isContextMatch(command))) {
+            return command;
+          }
+        } catch (error) {
+          console.error(`Invalid regex pattern: ${command.gesture}`, error);
+        }
+      }
+    }
+
+    return null;
   }
 
   resolveWebviewView(webviewView) {
@@ -494,14 +1137,23 @@ class GesturePadViewProvider {
       }
       // No fallback to 'any' or unspecified inputType for wheel
       if (enablePatternMatching) {
-        return await this._findPatternMatch(gesture, commands, inputType, buttonStr);
+        return await this._findPatternMatch(
+          gesture,
+          commands,
+          inputType,
+          buttonStr
+        );
       }
       return null;
     }
 
     // Try exact match with specific inputType and button, checking context
     for (const gc of commands) {
-      if (gc.gesture === gesture && gc.inputType === inputType && gc.button === buttonStr) {
+      if (
+        gc.gesture === gesture &&
+        gc.inputType === inputType &&
+        gc.button === buttonStr
+      ) {
         if (await this._isContextMatch(gc)) {
           return gc;
         }
@@ -511,7 +1163,11 @@ class GesturePadViewProvider {
     // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
     if (buttonStr !== "left") {
       for (const gc of commands) {
-        if (gc.gesture === gesture && gc.inputType === inputType && gc.button === "left") {
+        if (
+          gc.gesture === gesture &&
+          gc.inputType === inputType &&
+          gc.button === "left"
+        ) {
           if (await this._isContextMatch(gc)) {
             return gc;
           }
@@ -550,172 +1206,14 @@ class GesturePadViewProvider {
 
     // Try pattern match last (most expensive)
     if (enablePatternMatching) {
-      return await this._findPatternMatch(gesture, commands, inputType, buttonStr);
+      return await this._findPatternMatch(
+        gesture,
+        commands,
+        inputType,
+        buttonStr
+      );
     }
 
-    return null;
-  }
-
-  // Optimized pattern matching with caching
-  async _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
-    const patternCommands = gestureCommands.filter(
-      (gc) => gc.matchType === "pattern"
-    );
-
-    // For wheel input, only match patterns explicitly defined with inputType: "wheel"
-    if (inputType === "wheel") {
-      for (const command of patternCommands) {
-        // Ignore button for wheel pattern matching
-        if (command.inputType === "wheel") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && await this._isContextMatch(command)) {
-            return command;
-          }
-        }
-      }
-      // No fallback to 'any' or unspecified inputType for wheel
-      return null;
-    }
-
-    // Original logic for other input types (like mouse)
-    // First, try pattern matches with specific inputType and specific button
-    for (const command of patternCommands) {
-      if (command.inputType === inputType && command.button === buttonStr) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            // Use the gesture string as a regex directly (allowing complex patterns)
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && await this._isContextMatch(command)) {
-          return command;
-        }
-      }
-    }
-
-    // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (command.inputType === inputType && command.button === "left") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && await this._isContextMatch(command)) {
-            return command;
-          }
-        }
-      }
-    }
-
-    // Then, try pattern matches with any/unspecified inputType and specific button
-    for (const command of patternCommands) {
-      if (!command.inputType && command.button === buttonStr) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && await this._isContextMatch(command)) {
-          return command;
-        }
-      }
-    }
-
-    // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (!command.inputType && command.button === "left") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && await this._isContextMatch(command)) {
-            return command;
-          }
-        }
-      }
-    }
-
-    // Finally, try matches with unspecified button, defaulting to 'left'
-    for (const command of patternCommands) {
-      if (!command.inputType && !command.button) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && await this._isContextMatch(command)) {
-          return command;
-        }
-      }
-    }
     return null;
   }
 
@@ -737,7 +1235,7 @@ class GesturePadViewProvider {
   // Cache for compiled regex patterns
   _patternCache = new Map();
 
-  // Helper method to check if a gesture command matches the current context
+  // Helper method to check if a gesture command matches to current context
   async _isContextMatch(gestureCommand) {
     if (!gestureCommand.when) {
       return true; // No context condition means always active
@@ -746,7 +1244,10 @@ class GesturePadViewProvider {
     try {
       return await this._contextEvaluator.evaluate(gestureCommand.when);
     } catch (error) {
-      console.error(`Error evaluating context for gesture "${gestureCommand.gesture}":`, error);
+      console.error(
+        `Error evaluating context for gesture "${gestureCommand.gesture}":`,
+        error
+      );
       return false; // Default to false on error
     }
   }
@@ -770,7 +1271,7 @@ class GesturePadViewProvider {
       else if (details.button === 1) buttonStr = "middle";
       else if (details.button === 2) buttonStr = "right";
 
-      // ignor e buttonStr for wheel input
+      // ignore buttonStr for wheel input
       if (inputType === "wheel") {
         buttonStr = undefined; // Ignore button for wheel input
       }
@@ -884,7 +1385,6 @@ class GesturePadViewProvider {
     }
   }
 
-  // Method to generate HTML content
   // Method to show a Quick Pick UI for selecting a VS Code command
   async _selectCommand() {
     const quickPick = vscode.window.createQuickPick();
@@ -918,6 +1418,171 @@ class GesturePadViewProvider {
       quickPick.show();
     });
   }
+
+  // Optimized pattern matching with caching
+  async _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
+    const patternCommands = gestureCommands.filter(
+      (gc) => gc.matchType === "pattern"
+    );
+
+    // For wheel input, only match patterns explicitly defined with inputType: "wheel"
+    if (inputType === "wheel") {
+      for (const command of patternCommands) {
+        // Ignore button for wheel pattern matching
+        if (command.inputType === "wheel") {
+          let regex = this._patternCache.get(command.gesture);
+
+          if (!regex) {
+            try {
+              regex = new RegExp(command.gesture);
+              this._patternCache.set(command.gesture, regex);
+            } catch (e) {
+              console.error(
+                `Invalid regex pattern for gesture: ${command.gesture}`,
+                e
+              );
+              continue;
+            }
+          }
+
+          if (regex.test(gesture) && (await this._isContextMatch(command))) {
+            return command;
+          }
+        }
+      }
+      // No fallback to 'any' or unspecified inputType for wheel
+      return null;
+    }
+
+    // Original logic for other input types (like mouse)
+    // First, try pattern matches with specific inputType and specific button
+    for (const command of patternCommands) {
+      if (command.inputType === inputType && command.button === buttonStr) {
+        let regex = this._patternCache.get(command.gesture);
+
+        if (!regex) {
+          try {
+            // Use the gesture string as a regex directly (allowing complex patterns)
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture) && (await this._isContextMatch(command))) {
+          return command;
+        }
+      }
+    }
+
+    // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (command.inputType === inputType && command.button === "left") {
+          let regex = this._patternCache.get(command.gesture);
+
+          if (!regex) {
+            try {
+              regex = new RegExp(command.gesture);
+              this._patternCache.set(command.gesture, regex);
+            } catch (e) {
+              console.error(
+                `Invalid regex pattern for gesture: ${command.gesture}`,
+                e
+              );
+              continue;
+            }
+          }
+
+          if (regex.test(gesture) && (await this._isContextMatch(command))) {
+            return command;
+          }
+        }
+      }
+    }
+
+    // Then, try pattern matches with any/unspecified inputType and specific button
+    for (const command of patternCommands) {
+      if (!command.inputType && command.button === buttonStr) {
+        let regex = this._patternCache.get(command.gesture);
+
+        if (!regex) {
+          try {
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture) && (await this._isContextMatch(command))) {
+          return command;
+        }
+      }
+    }
+
+    // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
+    if (buttonStr !== "left") {
+      for (const command of patternCommands) {
+        if (!command.inputType && command.button === "left") {
+          let regex = this._patternCache.get(command.gesture);
+
+          if (!regex) {
+            try {
+              regex = new RegExp(command.gesture);
+              this._patternCache.set(command.gesture, regex);
+            } catch (e) {
+              console.error(
+                `Invalid regex pattern for gesture: ${command.gesture}`,
+                e
+              );
+              continue;
+            }
+          }
+
+          if (regex.test(gesture) && (await this._isContextMatch(command))) {
+            return command;
+          }
+        }
+      }
+    }
+
+    // Finally, try matches with unspecified button, defaulting to 'left'
+    for (const command of patternCommands) {
+      if (!command.inputType && !command.button) {
+        let regex = this._patternCache.get(command.gesture);
+
+        if (!regex) {
+          try {
+            regex = new RegExp(command.gesture);
+            this._patternCache.set(command.gesture, regex);
+          } catch (e) {
+            console.error(
+              `Invalid regex pattern for gesture: ${command.gesture}`,
+              e
+            );
+            continue;
+          }
+        }
+
+        if (regex.test(gesture) && (await this._isContextMatch(command))) {
+          return command;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Method to generate HTML content
   _getHtmlForWebview(webviewView) {
     // Get URIs for scripts, using webview URIs to ensure proper security
     const nonce = getNonce();
@@ -959,7 +1624,7 @@ class GesturePadViewProvider {
   }
 }
 
-// Helper function to generate nonce (keep outside the class or make static)
+// Helper function to generate nonce (keep outside of class or make static)
 function getNonce() {
   let text = "";
   const possible =

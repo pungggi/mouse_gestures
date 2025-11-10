@@ -38,6 +38,23 @@
         "command": "mouseGestures.cheatSheet",
         "title": "Show Cheat Sheet",
         "category": "Mouse Gestures"
+      },
+      {
+        "command": "mouseGestures.startQuickPad",
+        "title": "Start QuickPad",
+        "category": "Mouse Gestures"
+      },
+      {
+        "command": "mouseGestures.cancelQuickPad",
+        "title": "Cancel QuickPad",
+        "category": "Mouse Gestures"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mouseGestures.startQuickPad",
+        "key": "alt+g",
+        "mac": "alt+g"
       }
     ],
     "configuration": {
@@ -219,6 +236,21 @@
             }
           },
           "description": "Maps mouse gestures to VS Code commands. Each entry maps a gesture to one or more commands to execute."
+        },
+        "mouseGestures.quickPad.autoClose": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically close QuickPad after gesture completion"
+        },
+        "mouseGestures.quickPad.inactivityTimeoutMs": {
+          "type": "number",
+          "default": 6000,
+          "description": "Auto-close QuickPad after inactivity (milliseconds)"
+        },
+        "mouseGestures.quickPad.showHint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show hint text in QuickPad overlay"
         }
       }
     }

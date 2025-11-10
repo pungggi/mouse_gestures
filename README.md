@@ -36,6 +36,10 @@ Any [feedback](https://ngsoftware.canny.io/requests) is welcome.
 
 ## How It Works
 
+The extension provides two ways to perform mouse gestures:
+
+### Gesture Pad View
+
 The extension provides a gesture pad view in the activity bar where you can perform mouse gestures. When a gesture is detected, it executes the corresponding command(s) based on your configuration.
 
 1. Click and hold the right, middle or left mouse button in the gesture pad
@@ -43,6 +47,17 @@ The extension provides a gesture pad view in the activity bar where you can perf
 3. Release the mouse button to execute the configured command(s)
 
 4. Alternatively you can just do one mouse wheel (up, down, left or right)
+
+### QuickPad Overlay
+
+QuickPad provides an ephemeral overlay that appears directly in your active editor, allowing you to perform gestures anywhere without switching to the sidebar.
+
+1. Press **Alt+G** (or use the "Mouse Gestures: Start QuickPad" command) to open the overlay
+2. Draw your gesture in the overlay using mouse or wheel
+3. The overlay automatically closes after gesture completion (configurable) or after 6 seconds of inactivity
+4. Press **Escape** to cancel the overlay at any time
+
+**Context-Aware**: QuickPad captures the current context (editor, terminal, file type) when invoked, allowing the same gesture to trigger different commands based on where you're working.
 
 ### Default Gesture Mappings
 
@@ -103,16 +118,56 @@ The extension supports context-aware gestures using VS Code's "when clause" expr
 
 #### Available Context Keys
 
-You can use any of VS Code's built-in context keys in your `when` expressions:
+The extension implements the following context keys for use in `when` expressions:
 
-- **Editor contexts**: `editorTextFocus`, `editorLangId`, `editorHasSelection`, `editorReadonly`
-- **File contexts**: `resourceFilename`, `resourceExtname`, `resourceScheme`
-- **View contexts**: `explorerViewletVisible`, `sideBarFocus`, `panelFocus`
-- **Language contexts**: `editorLangId == 'typescript'`, `editorLangId == 'python'`
-- **Configuration**: `config.editor.minimap.enabled`
-- **Logical operators**: `&&` (and), `||` (or), `!` (not)
+**Editor Contexts:**
 
-For a complete list of available context keys, see the [VS Code documentation](https://code.visualstudio.com/api/references/when-clause-contexts).
+- `editorFocus` - Editor has focus
+- `editorTextFocus` - Text editor has focus (not terminal)
+- `editorHasSelection` - Text is selected
+- `editorHasMultipleSelections` - Multiple selections exist
+- `editorReadonly` - Editor is read-only
+- `editorLangId` - Language ID (e.g., `editorLangId == 'typescript'`)
+
+**File/Resource Contexts:**
+
+- `resourceScheme` - URI scheme (e.g., 'file')
+- `resourceFilename` - File name
+- `resourceExtname` - File extension
+- `resourceLangId` - Language ID from resource
+- `isFileSystemResource` - Is a file system resource
+
+**System Contexts:**
+
+- `isLinux`, `isMac`, `isWindows` - Operating system detection
+- `isWeb` - Running in web environment
+
+**Workspace Contexts:**
+
+- `workspaceFolderCount` - Number of workspace folders
+- `workbenchState` - 'empty', 'folder', or 'workspace'
+
+**Terminal Contexts:**
+
+- `terminalFocus` - Terminal has focus
+- `terminalIsOpen` - Terminal is open
+
+**Editor Group Contexts:**
+
+- `editorIsOpen` - Any editor is open
+- `multipleEditorGroups` - Multiple editor groups exist
+
+**Configuration:**
+
+- `config.*` - Access any VS Code configuration (e.g., `config.editor.minimap.enabled`)
+
+**Logical Operators:**
+
+- `&&` (and), `||` (or), `!` (not)
+- `==`, `!=`, `>`, `<`, `>=`, `<=`
+- `=~` (regex matching)
+- `in`, `not in` (array/object membership)
+- Parentheses for grouping: `(condition1 || condition2) && condition3`
 
 ## Configuration
 
