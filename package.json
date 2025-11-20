@@ -5,6 +5,15 @@
   "version": "1.1.13",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pungggi/mouse_gestures.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pungggi/mouse_gestures/issues"
+  },
+  "homepage": "https://github.com/pungggi/mouse_gestures#readme",
   "engines": {
     "vscode": "^1.80.0"
   },
