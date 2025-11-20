@@ -1,12 +1,6 @@
 # Change Log
 
-## [1.1.1] - 2025-05-22
-
-### Added
-
-- **Cheat Sheet Grouping**: Gestures in the cheat sheet are now grouped by their associated command descriptions for better organization and readability.
-
-## [1.2.0] - 2025-11-10
+## [1.2.0] - 2024-11-20
 
 ### Added
 
@@ -21,13 +15,8 @@
   - Same gesture can trigger different commands in editor vs explorer vs terminal
   - Automatic context condition generation when assigning new gestures
 
-### Fixed
-
-- **Cheat Sheet Grouping**: Gestures in cheat sheet are now grouped by their associated command descriptions for better organization and readability.
-
-## [1.1.1] - 2025-05-22
+## [1.1.1] - 2024-05-22
 
 ### Added
 
-- **Cheat Sheet Grouping**: Gestures in cheat sheet are now grouped by their associated command descriptions for better organization and readability.
-  e
+- **Cheat Sheet Grouping**: Gestures in the cheat sheet are now grouped by their associated command descriptions for better organization and readability.

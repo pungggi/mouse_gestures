@@ -954,7 +954,10 @@ class GesturePadViewProvider {
       if (command.inputType === inputType && command.button === buttonStr) {
         try {
           const regex = new RegExp(command.gesture);
-          if (regex.test(gesture) && (await this._isContextMatch(command))) {
+          if (
+            regex.test(gesture) &&
+            (await this._isContextMatchWithCaptured(command, context))
+          ) {
             return command;
           }
         } catch (error) {
