@@ -3,13 +3,6 @@ const vscode = require("vscode");
 const { ContextEvaluator } = require("./contextEvaluator");
 
 
-/**
- * Initialize the extension: register commands, webview providers, and panel lifecycle handlers.
- *
- * Sets up wrapped find/close-find commands to control the find widget, registers the gesture pad webview provider,
- * and registers commands for showing the cheat sheet, starting/canceling the QuickPad. Also manages singleton
- * panel references, message handlers for cheat sheet and QuickPad interactions, and QuickPad inactivity/cleanup behavior.
- */
 function activate(context) {
   // Wrap the find command
   context.subscriptions.push(
