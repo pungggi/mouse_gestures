@@ -1,6 +1,7 @@
 // Context evaluator for when clause expressions
 const vscode = require("vscode");
 const path = require("path");
+const { getFindWidgetVisible } = require("./findWidgetTracker");
 
 /**
  * Evaluates when clause expressions similar to VS Code's keyboard shortcuts
@@ -96,6 +97,7 @@ class ContextEvaluator {
       const visibleEditors = vscode.window.visibleTextEditors;
       this._contextCache.set('editorIsOpen', visibleEditors.length > 0);
       this._contextCache.set('multipleEditorGroups', visibleEditors.length > 1);
+      this._contextCache.set('findWidgetVisible', getFindWidgetVisible());
 
       // Terminal contexts
       this._contextCache.set('terminalFocus', !!vscode.window.activeTerminal);

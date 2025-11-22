@@ -1,8 +1,24 @@
 // Extension entry point
 const vscode = require("vscode");
 const { ContextEvaluator } = require("./contextEvaluator");
+const { setFindWidgetVisible } = require("./findWidgetTracker");
 
 function activate(context) {
+  // Wrap the find command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mouseGestures.actions.find", (...args) => {
+      setFindWidgetVisible(true);
+      vscode.commands.executeCommand("actions.find", ...args);
+    })
+  );
+
+  // Wrap the close find widget command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mouseGestures.closeFindWidget", (...args) => {
+      setFindWidgetVisible(false);
+      vscode.commands.executeCommand("closeFindWidget", ...args);
+    })
+  );
   // context here is ExtensionContext
 
   // Store panel reference for singleton pattern
@@ -139,7 +155,7 @@ function activate(context) {
               }
 
               // Start the find action
-              await vscode.commands.executeCommand("actions.find");
+              await vscode.commands.executeCommand("mouseGestures.actions.find");
 
               // Set the search text (plain text, not regex)
               await vscode.commands.executeCommand(

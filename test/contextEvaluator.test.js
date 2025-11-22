@@ -42,33 +42,43 @@ Module.prototype.require = function(id) {
   return originalRequire.apply(this, arguments);
 };
 
-// Now require the context evaluator
-const { ContextEvaluator } = require('../src/contextEvaluator');
+
+const assert = require('assert');
+const { setFindWidgetVisible } = require('../src/findWidgetTracker');
+
 
 async function runTests() {
   console.log('Testing Context Evaluator...');
 
+  // require the context evaluator inside the test function to avoid caching issues
+  const { ContextEvaluator } = require('../src/contextEvaluator');
   const evaluator = new ContextEvaluator();
 
   // Test simple context keys
   console.log('Testing simple context keys:');
-  console.log('editorTextFocus:', await evaluator.evaluate('editorTextFocus'));
-  console.log('editorLangId == typescript:', await evaluator.evaluate('editorLangId == typescript'));
-  console.log('editorLangId == javascript:', await evaluator.evaluate('editorLangId == javascript'));
+  assert.strictEqual(await evaluator.evaluate('editorTextFocus'), true, 'editorTextFocus should be true');
+  assert.strictEqual(await evaluator.evaluate('editorLangId == typescript'), true, 'editorLangId should be typescript');
+  assert.strictEqual(await evaluator.evaluate('editorLangId == javascript'), false, 'editorLangId should not be javascript');
+
+  // Test findWidgetVisible
+  setFindWidgetVisible(true);
+  evaluator.clearCache();
+  assert.strictEqual(await evaluator.evaluate('findWidgetVisible'), true, 'findWidgetVisible should be true');
+
+  setFindWidgetVisible(false);
+  evaluator.clearCache();
+  assert.strictEqual(await evaluator.evaluate('findWidgetVisible'), false, 'findWidgetVisible should be false');
+
 
   // Test logical operators
   console.log('\nTesting logical operators:');
-  console.log('editorTextFocus && editorLangId == typescript:', await evaluator.evaluate('editorTextFocus && editorLangId == typescript'));
-  console.log('editorLangId == typescript || editorLangId == javascript:', await evaluator.evaluate('editorLangId == typescript || editorLangId == javascript'));
-  console.log('!terminalFocus:', await evaluator.evaluate('!terminalFocus'));
+  assert.strictEqual(await evaluator.evaluate('editorTextFocus && editorLangId == typescript'), true, 'editorTextFocus and editorLangId == typescript should be true');
+  assert.strictEqual(await evaluator.evaluate('editorLangId == typescript || editorLangId == javascript'), true, 'editorLangId == typescript or editorLangId == javascript should be true');
+  assert.strictEqual(await evaluator.evaluate('!terminalFocus'), true, '!terminalFocus should be true');
 
   // Test configuration
   console.log('\nTesting configuration:');
-  console.log('config.editor.minimap.enabled:', await evaluator.evaluate('config.editor.minimap.enabled'));
-
-  // Test invalid expressions
-  console.log('\nTesting invalid expressions:');
-  console.log('invalid expression:', await evaluator.evaluate('invalid && ('));
+  assert.strictEqual(await evaluator.evaluate('config.editor.minimap.enabled'), true, 'config.editor.minimap.enabled should be true');
 
   console.log('\nAll tests completed!');
 }
