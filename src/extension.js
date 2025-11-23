@@ -6,9 +6,15 @@ const { ContextEvaluator } = require("./contextEvaluator");
 function activate(context) {
   // Wrap the find command
   context.subscriptions.push(
-    vscode.commands.registerCommand("mouseGestures.actions.find", (...args) => {
-
-      vscode.commands.executeCommand("actions.find", ...args);
+    vscode.commands.registerCommand("mouseGestures.actions.find", async (...args) => {
+      try {
+        await vscode.commands.executeCommand("setContext", "findWidgetVisible", true);
+        await vscode.commands.executeCommand("actions.find", ...args);
+      } catch (error) {
+        throw error;
+      } finally {
+        await vscode.commands.executeCommand("setContext", "findWidgetVisible", false);
+      }
     })
   );
 
