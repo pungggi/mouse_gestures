@@ -3,8 +3,6 @@ const vscode = require("vscode");
 const path = require("path");
 
 
-
-
 /**
  * Evaluates when clause expressions similar to VS Code's keyboard shortcuts
  */
@@ -99,8 +97,6 @@ class ContextEvaluator {
       const visibleEditors = vscode.window.visibleTextEditors;
       this._contextCache.set('editorIsOpen', visibleEditors.length > 0);
       this._contextCache.set('multipleEditorGroups', visibleEditors.length > 1);
-
-
 
 
       // Terminal contexts
