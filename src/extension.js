@@ -2,7 +2,33 @@
 const vscode = require("vscode");
 const { ContextEvaluator } = require("./contextEvaluator");
 
+
 function activate(context) {
+  // Wrap the find command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mouseGestures.actions.find", async (...args) => {
+      try {
+        await vscode.commands.executeCommand("setContext", "findWidgetVisible", true);
+        await vscode.commands.executeCommand("actions.find", ...args);
+      } catch (error) {
+        throw error;
+      } finally {
+        await vscode.commands.executeCommand("setContext", "findWidgetVisible", false);
+      }
+    })
+  );
+
+  // Wrap the close find widget command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("mouseGestures.closeFindWidget", async (...args) => {
+      try {
+        return await vscode.commands.executeCommand("closeFindWidget", ...args);
+      } catch (error) {
+        console.error("Error executing closeFindWidget:", error);
+        throw error;
+      }
+    })
+  );
   // context here is ExtensionContext
 
   // Store panel reference for singleton pattern
@@ -139,7 +165,7 @@ function activate(context) {
               }
 
               // Start the find action
-              await vscode.commands.executeCommand("actions.find");
+              await vscode.commands.executeCommand("mouseGestures.actions.find");
 
               // Set the search text (plain text, not regex)
               await vscode.commands.executeCommand(

@@ -64,6 +64,17 @@
         "command": "mouseGestures.startQuickPad",
         "key": "alt+g",
         "mac": "alt+g"
+      },
+      {
+        "command": "mouseGestures.actions.find",
+        "key": "ctrl+f",
+        "mac": "cmd+f",
+        "when": "editorFocus"
+      },
+      {
+        "command": "mouseGestures.closeFindWidget",
+        "key": "escape",
+        "when": "findWidgetVisible"
       }
     ],
     "configuration": {
