@@ -1,7 +1,7 @@
 // Extension entry point
 const vscode = require("vscode");
 const { ContextEvaluator } = require("./contextEvaluator");
-const { setFindWidgetVisible } = require("./findWidgetTracker");
+
 
 /**
  * Initialize the extension: register commands, webview providers, and panel lifecycle handlers.
@@ -14,7 +14,7 @@ function activate(context) {
   // Wrap the find command
   context.subscriptions.push(
     vscode.commands.registerCommand("mouseGestures.actions.find", (...args) => {
-      setFindWidgetVisible(true);
+
       vscode.commands.executeCommand("actions.find", ...args);
     })
   );
@@ -22,7 +22,7 @@ function activate(context) {
   // Wrap the close find widget command
   context.subscriptions.push(
     vscode.commands.registerCommand("mouseGestures.closeFindWidget", (...args) => {
-      setFindWidgetVisible(false);
+
       vscode.commands.executeCommand("closeFindWidget", ...args);
     })
   );
