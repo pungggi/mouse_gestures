@@ -20,9 +20,13 @@ function activate(context) {
 
   // Wrap the close find widget command
   context.subscriptions.push(
-    vscode.commands.registerCommand("mouseGestures.closeFindWidget", (...args) => {
-
-      vscode.commands.executeCommand("closeFindWidget", ...args);
+    vscode.commands.registerCommand("mouseGestures.closeFindWidget", async (...args) => {
+      try {
+        return await vscode.commands.executeCommand("closeFindWidget", ...args);
+      } catch (error) {
+        console.error("Error executing closeFindWidget:", error);
+        throw error;
+      }
     })
   );
   // context here is ExtensionContext
