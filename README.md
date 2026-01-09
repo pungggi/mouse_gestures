@@ -1,3 +1,5 @@
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/pungggi/mouse_gestures?utm_source=oss&utm_medium=github&utm_campaign=pungggi%2Fmouse_gestures&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 # Mouse Gestures for VS Code
 
 The first extension with enhanced mouse gesture support for Visual Studio Code. Execute commands by performing mouse gestures in the gesture pad.
