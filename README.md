@@ -135,14 +135,26 @@ The extension implements the following context keys for use in `when` expression
 - `editorHasMultipleSelections` - Multiple selections exist
 - `editorReadonly` - Editor is read-only
 - `editorLangId` - Language ID (e.g., `editorLangId == 'typescript'`)
+- `editorIsDirty` / `activeEditorIsDirty` - Editor has unsaved changes
+- `editorLineNumber` - Current cursor line number (1-based)
+- `isInDiffEditor` - Active editor is a diff editor
 
 **File/Resource Contexts:**
 
 - `resourceScheme` - URI scheme (e.g., 'file')
 - `resourceFilename` - File name
 - `resourceExtname` - File extension
+- `resourceDirname` - Directory path of the resource
+- `resourcePath` - Full resource path
 - `resourceLangId` - Language ID from resource
 - `isFileSystemResource` - Is a file system resource
+
+**Debug Contexts:**
+
+- `inDebugMode` - A debug session is active
+- `debugType` - Type of the active debug session (e.g., 'node', 'python')
+- `debugState` - Debug state: 'inactive' or 'running'
+- `debuggersAvailable` - At least one debugger extension is installed
 
 **System Contexts:**
 
@@ -158,11 +170,20 @@ The extension implements the following context keys for use in `when` expression
 
 - `terminalFocus` - Terminal has focus
 - `terminalIsOpen` - Terminal is open
+- `terminalCount` - Number of open terminals
 
 **Editor Group Contexts:**
 
 - `editorIsOpen` - Any editor is open
 - `multipleEditorGroups` - Multiple editor groups exist
+- `groupEditorsCount` - Number of tabs in the active editor group
+- `activeEditorGroupIndex` - Index of the active editor group
+- `activeEditorGroupLast` - Active group is the last group
+- `activeEditorGroupEmpty` - Active group has no editors
+
+**Window Contexts:**
+
+- `windowFocused` - VS Code window has focus
 
 **Configuration:**
 

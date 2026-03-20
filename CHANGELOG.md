@@ -1,10 +1,19 @@
 # Change Log
 
-## [1.1.15]
+## [1.1.16]
+
+### Fixed
+
+- **QuickPad assignment dialog crash**: Fixed error "Cannot read properties of undefined (reading 'editorFocus')" when assigning a new command to an unknown gesture in QuickPad. The context is now properly preserved before panel disposal.
+- **`editorReadonly` context key**: Fixed incorrect behavior due to reading non-existent `document.isReadonly` API property. Now uses URI-scheme heuristic for accurate read-only detection.
 
 ### Changed
 
 - **Button differentiation**: The `button` property now strictly differentiates gestures. If a gesture is configured with a specific button (`"left"`, `"middle"`, or `"right"`), it only matches that button. If `button` is not set, the gesture matches any mouse button. This allows the same gesture to trigger different commands depending on which mouse button is used.
+
+### Enhanced
+
+- **Context evaluator**: Added 16 new context keys for expanded `when` clause support, including debug state (`inDebugMode`, `debugType`, `debugState`), editor state (`editorIsDirty`, `editorLineNumber`, `isInDiffEditor`), resource paths (`resourceDirname`, `resourcePath`), editor groups (`groupEditorsCount`, `activeEditorGroupIndex`, `activeEditorGroupLast`, `activeEditorGroupEmpty`), and window state (`windowFocused`, `terminalCount`, `windowFocused`). Switched to hybrid polling + event-driven architecture for real-time context accuracy.
 
 ### Removed
 

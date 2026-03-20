@@ -224,7 +224,7 @@
               },
               "when": {
                 "type": "string",
-                "description": "Optional when clause context expression that determines when this gesture is active. Uses the same syntax as VS Code keyboard shortcuts. Examples: 'editorTextFocus', 'editorLangId == typescript', 'explorerViewletVisible && !inDebugMode'"
+                "description": "Optional when clause context expression that determines when this gesture is active. Uses the same syntax as VS Code keyboard shortcuts. Supported keys: editorFocus, editorTextFocus, editorHasSelection, editorHasMultipleSelections, editorReadonly, editorLangId, editorIsDirty, editorLineNumber, isInDiffEditor, resourceScheme, resourceFilename, resourceExtname, resourceDirname, resourcePath, resourceLangId, isFileSystemResource, inDebugMode, debugType, debugState, debuggersAvailable, terminalFocus, terminalIsOpen, terminalCount, isLinux, isMac, isWindows, isWeb, workspaceFolderCount, workbenchState, editorIsOpen, multipleEditorGroups, groupEditorsCount, activeEditorGroupIndex, activeEditorGroupLast, activeEditorGroupEmpty, windowFocused, config.*. Operators: &&, ||, !, ==, !=, >, <, >=, <=, =~, in, not in, and parentheses. Examples: 'editorTextFocus', 'editorLangId == typescript', 'inDebugMode && editorIsDirty'"
               }
             }
           },

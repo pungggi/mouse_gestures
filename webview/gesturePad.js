@@ -368,51 +368,73 @@ function showGesturePreview(gestureInfo) {
   }, 4000);
 }
 
+// Helper: calculate total path distance
+function totalPathDistance(path) {
+  let dist = 0;
+  for (let i = 1; i < path.length; i++) {
+    const dx = path[i].x - path[i - 1].x;
+    const dy = path[i].y - path[i - 1].y;
+    dist += Math.sqrt(dx * dx + dy * dy);
+  }
+  return dist;
+}
+
 // --- Mouseup handler: finalize gesture, simplify, and extract directions ---
 window.addEventListener("mouseup", () => {
   if (isDragging) {
     isDragging = false;
 
-    if (gesturePath.length > 1) {
-      // 1. Aggressive path simplification (Douglas-Peucker)
-      // Epsilon controls simplification strength; higher = more aggressive
-      const epsilon = 18; // pixels, adjust as needed for best results
-      const simplifiedPath = simplifyDouglasPeucker(gesturePath, epsilon);
+    // In overlay mode, dismiss on tap or very short drag
+    const minDragDistance = 20; // pixels
+    const hasMeaningfulDrag =
+      gesturePath.length > 1 && totalPathDistance(gesturePath) >= minDragDistance;
 
-      // 2. Generate and normalize direction sequence
-      let rawSequence = generateDirectionSequenceFromPath(simplifiedPath);
-      let normalizedSequence = normalizeGestureSequence(rawSequence);
-
-      // 3. Show preview and send to extension
-      if (enableGesturePreview) {
-        const gestureInfo = findGestureDescriptions(
-          normalizedSequence,
-          "mouse",
-          initiatingButton
-        );
-        showGesturePreview(gestureInfo);
+    if (!hasMeaningfulDrag) {
+      if (overlayMode) {
+        vscode.postMessage({ command: "cancelQuickPad" });
       }
-
-      // Determine payload based on whether wheel was used
-      let payloadInputType = "mouse";
-      let payloadButton = initiatingButton; // Use the stored mouse button by default
-
-      if (wheelUsedDuringDrag) {
-        payloadInputType = "wheel";
-        payloadButton = "none"; // Use "none" for wheel input as requested
-      }
-
-      vscode.postMessage({
-        command: "gestureDetected",
-        sequence: normalizedSequence,
-        rawSequence: rawSequence,
-        simplifiedPath: simplifiedPath,
-        originalPath: gesturePath,
-        inputType: payloadInputType,
-        button: payloadButton,
-      });
-      initiatingButton = null;
+      gesturePath = [];
+      return;
     }
+
+    // 1. Aggressive path simplification (Douglas-Peucker)
+    // Epsilon controls simplification strength; higher = more aggressive
+    const epsilon = 18; // pixels, adjust as needed for best results
+    const simplifiedPath = simplifyDouglasPeucker(gesturePath, epsilon);
+
+    // 2. Generate and normalize direction sequence
+    let rawSequence = generateDirectionSequenceFromPath(simplifiedPath);
+    let normalizedSequence = normalizeGestureSequence(rawSequence);
+
+    // 3. Show preview and send to extension
+    if (enableGesturePreview && !overlayMode) {
+      const gestureInfo = findGestureDescriptions(
+        normalizedSequence,
+        "mouse",
+        initiatingButton
+      );
+      showGesturePreview(gestureInfo);
+    }
+
+    // Determine payload based on whether wheel was used
+    let payloadInputType = "mouse";
+    let payloadButton = initiatingButton; // Use the stored mouse button by default
+
+    if (wheelUsedDuringDrag) {
+      payloadInputType = "wheel";
+      payloadButton = "none"; // Use "none" for wheel input as requested
+    }
+
+    vscode.postMessage({
+      command: "gestureDetected",
+      sequence: normalizedSequence,
+      rawSequence: rawSequence,
+      simplifiedPath: simplifiedPath,
+      originalPath: gesturePath,
+      inputType: payloadInputType,
+      button: payloadButton,
+    });
+    initiatingButton = null;
 
     // Reset path for next gesture
     gesturePath = [];

@@ -360,57 +360,63 @@ function activate(context) {
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body, html { 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            overflow: hidden; 
-            background-color: rgba(37, 37, 37, 0.85); 
-            cursor: crosshair; 
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--vscode-editor-background);
+            cursor: crosshair;
             font-family: var(--vscode-font-family);
+            opacity: 0;
+            animation: fadeIn 80ms ease-out forwards;
         }
-        #gesture-area { 
-            position: relative; 
-            width: 100%; 
-            height: 100%; 
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        #gesture-area {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        #path-canvas { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            pointer-events: none; 
+        #path-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
         #hint {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
-            color: #ffffff;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
+            background-color: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 11px;
             pointer-events: none;
-            opacity: 0.8;
+            opacity: 0.7;
         }
         .reticle {
             position: absolute;
             width: 40px;
             height: 40px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--vscode-focusBorder);
             border-radius: 50%;
             pointer-events: none;
+            opacity: 0.25;
             animation: pulse 2s infinite;
         }
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.3; }
-            50% { transform: scale(1.1); opacity: 0.6; }
-            100% { transform: scale(1); opacity: 0.3; }
+            0% { transform: scale(1); opacity: 0.15; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.15; }
         }
     </style>
 </head>
@@ -447,20 +453,23 @@ function activate(context) {
       // Setup message handling
       const messageHandler = async (message) => {
         if (message.command === "gestureDetected") {
+          // Save context before disposing the panel
+          const savedContext = quickPadContext;
+
           // Close the panel FIRST to restore focus
           if (config.get("quickPad.autoClose") !== false && quickPadPanel) {
             quickPadPanel.dispose();
             quickPadPanel = undefined;
             quickPadContext = undefined;
 
-            // Wait a bit for focus to return to the original editor
-            await new Promise((resolve) => setTimeout(resolve, 50));
+            // Brief wait for focus to return to the original editor
+            await new Promise((resolve) => setTimeout(resolve, 10));
           }
 
           // THEN execute the command with focus restored
           await provider._handleQuickPadGesture(
             message.details || message,
-            quickPadContext
+            savedContext
           );
         } else if (message.command === "cancelQuickPad") {
           if (quickPadPanel) {
@@ -524,7 +533,7 @@ class GesturePadViewProvider {
     // Accept subscriptions
     this._extensionUri = extensionUri;
     this._subscriptions = subscriptions; // Store subscriptions
-    this._contextEvaluator = new ContextEvaluator();
+    this._contextEvaluator = new ContextEvaluator(subscriptions);
   }
 
   // Capture context snapshot for QuickPad
