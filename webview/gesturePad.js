@@ -392,6 +392,8 @@ window.addEventListener("mouseup", () => {
     if (!hasMeaningfulDrag) {
       if (overlayMode) {
         vscode.postMessage({ command: "cancelQuickPad" });
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
       gesturePath = [];
       return;

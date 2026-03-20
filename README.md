@@ -153,7 +153,7 @@ The extension implements the following context keys for use in `when` expression
 
 - `inDebugMode` - A debug session is active
 - `debugType` - Type of the active debug session (e.g., 'node', 'python')
-- `debugState` - Debug state: 'inactive' or 'running'
+- `debugState` - Debug state: `'inactive'` (no session), `'running'` (session active). Note: VS Code's extension API does not expose finer-grained states (e.g., stopped/paused at breakpoint), so only these two values are available.
 - `debuggersAvailable` - At least one debugger extension is installed
 
 **System Contexts:**

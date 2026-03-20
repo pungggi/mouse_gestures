@@ -72,9 +72,12 @@ class ContextEvaluator {
       })
     );
 
-    // Selection changes
+    // Selection changes — only update for the active editor
     this._disposables.push(
       vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (e.textEditor !== vscode.window.activeTextEditor) {
+          return;
+        }
         this._contextCache.set('editorHasSelection', !e.selections[0].isEmpty);
         this._contextCache.set('editorHasMultipleSelections', e.selections.length > 1);
         this._contextCache.set('editorLineNumber', e.selections[0].active.line + 1);
@@ -100,6 +103,9 @@ class ContextEvaluator {
     );
 
     // Terminal events
+    // Note: onDidChangeActiveTerminal tracks which terminal is active, not
+    // keyboard focus. VS Code has no API for terminal keyboard focus, so
+    // 'terminalFocus' here means "an active terminal exists".
     this._disposables.push(
       vscode.window.onDidChangeActiveTerminal((terminal) => {
         this._contextCache.set('terminalFocus', !!terminal);
@@ -129,7 +135,7 @@ class ContextEvaluator {
    */
   _updateEditorContextKeys(editor) {
     this._contextCache.set('editorFocus', !!editor);
-    this._contextCache.set('editorTextFocus', !!editor && !vscode.window.activeTerminal);
+    this._contextCache.set('editorTextFocus', !!editor && vscode.window.activeTextEditor === editor && vscode.window.state.focused);
     this._contextCache.set('textInputFocus', !!editor);
     this._contextCache.set('inputFocus', !!editor);
     this._contextCache.set('activeEditorGroupEmpty', !editor);
@@ -154,7 +160,7 @@ class ContextEvaluator {
       this._contextCache.set('resourcePath', doc.uri.path);
       this._contextCache.set('editorLineNumber', editor.selection.active.line + 1);
       this._contextCache.set('activeEditorGroupIndex', editor.viewColumn || 1);
-      this._contextCache.set('isInDiffEditor', doc.uri.scheme === 'vscode-diff');
+      this._contextCache.set('isInDiffEditor', this._isActiveTabDiff());
 
       // editorReadonly: URI-scheme heuristic (document.isReadonly does not exist in the API)
       const writableSchemes = ['file', 'untitled', 'vscode-userdata'];
@@ -219,9 +225,7 @@ class ContextEvaluator {
       const debugSession = vscode.debug.activeDebugSession;
       this._contextCache.set('inDebugMode', !!debugSession);
       this._contextCache.set('debugType', debugSession?.type);
-      if (!this._contextCache.has('debugState') || !debugSession) {
-        this._contextCache.set('debugState', debugSession ? 'running' : 'inactive');
-      }
+      this._contextCache.set('debugState', debugSession ? 'running' : 'inactive');
       this._contextCache.set('debuggersAvailable', this._hasDebuggerExtensions());
 
       // Window state
@@ -253,7 +257,23 @@ class ContextEvaluator {
       const activeGroup = vscode.window.tabGroups.activeTabGroup;
       return activeGroup ? activeGroup.tabs.length : 0;
     }
-    return vscode.window.visibleTextEditors.length;
+    // Conservative fallback: visibleTextEditors spans all groups, so return 1
+    // to avoid overstating the active group size on older VS Code versions
+    return 1;
+  }
+
+  /**
+   * Returns true if the active tab is a diff editor, using the tabGroups API
+   */
+  _isActiveTabDiff() {
+    if (vscode.window.tabGroups) {
+      const activeTab = vscode.window.tabGroups.activeTabGroup?.activeTab;
+      if (activeTab) {
+        // TabInputTextDiff has 'original' and 'modified' properties
+        return !!(activeTab.input && activeTab.input.original && activeTab.input.modified);
+      }
+    }
+    return false;
   }
 
   /**

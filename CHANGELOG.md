@@ -13,7 +13,7 @@
 
 ### Enhanced
 
-- **Context evaluator**: Added 16 new context keys for expanded `when` clause support, including debug state (`inDebugMode`, `debugType`, `debugState`), editor state (`editorIsDirty`, `editorLineNumber`, `isInDiffEditor`), resource paths (`resourceDirname`, `resourcePath`), editor groups (`groupEditorsCount`, `activeEditorGroupIndex`, `activeEditorGroupLast`, `activeEditorGroupEmpty`), and window state (`windowFocused`, `terminalCount`, `windowFocused`). Switched to hybrid polling + event-driven architecture for real-time context accuracy.
+- **Context evaluator**: Added 16 new context keys for expanded `when` clause support, including debug state (`inDebugMode`, `debugType`, `debugState`, `debuggersAvailable`), editor state (`editorIsDirty`, `activeEditorIsDirty`, `editorLineNumber`, `isInDiffEditor`), resource paths (`resourceDirname`, `resourcePath`), editor groups (`groupEditorsCount`, `activeEditorGroupIndex`, `activeEditorGroupLast`, `activeEditorGroupEmpty`), and window state (`windowFocused`, `terminalCount`). Switched to hybrid polling + event-driven architecture for real-time context accuracy.
 
 ### Removed
 
