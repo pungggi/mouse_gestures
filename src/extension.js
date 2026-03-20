@@ -119,7 +119,7 @@ function activate(context) {
               }
 
               let searchText; // eslint-disable-line no-case-declarations
-              let isSearchingByDescription = false; // eslint-disable-line no-case-declarations
+              let isSearchingByDescription; // eslint-disable-line no-case-declarations
 
               // Strategy 1: If we have an action description, search for that first
               if (
@@ -552,8 +552,6 @@ class GesturePadViewProvider {
 
       const gesture = direction;
       const gestureCommands = this._getGestureCommands();
-      const config = vscode.workspace.getConfiguration("mouseGestures");
-      const enablePatternMatching = config.get("enablePatternMatching");
 
       console.log(
         `QuickPad: Processing gesture "${gesture}" with ${gestureCommands.length} commands`
@@ -578,7 +576,6 @@ class GesturePadViewProvider {
       const match = await this._findGestureMatchWithContext(
         gesture,
         gestureCommands,
-        enablePatternMatching,
         inputType,
         buttonStr,
         context
@@ -637,6 +634,7 @@ class GesturePadViewProvider {
             };
 
             // Update settings
+            const config = vscode.workspace.getConfiguration("mouseGestures");
             const currentBindings = config.get("gestureCommands") || [];
             const updatedBindings = [...currentBindings, newBinding];
 
@@ -676,7 +674,6 @@ class GesturePadViewProvider {
   async _findGestureMatchWithContext(
     gesture,
     commands,
-    enablePatternMatching,
     inputType,
     buttonStr,
     capturedContext
@@ -690,19 +687,10 @@ class GesturePadViewProvider {
           }
         }
       }
-      if (enablePatternMatching) {
-        return await this._findPatternMatchWithCaptured(
-          gesture,
-          commands,
-          inputType,
-          buttonStr,
-          capturedContext
-        );
-      }
       return null;
     }
 
-    // Try exact match with specific inputType and button, checking context
+    // Try exact match with specific inputType and specific button
     for (const gc of commands) {
       if (
         gc.gesture === gesture &&
@@ -715,22 +703,20 @@ class GesturePadViewProvider {
       }
     }
 
-    // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const gc of commands) {
-        if (
-          gc.gesture === gesture &&
-          gc.inputType === inputType &&
-          gc.button === "left"
-        ) {
-          if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
-            return gc;
-          }
+    // Try exact match with specific inputType and unspecified button (matches any button)
+    for (const gc of commands) {
+      if (
+        gc.gesture === gesture &&
+        gc.inputType === inputType &&
+        !gc.button
+      ) {
+        if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
+          return gc;
         }
       }
     }
 
-    // Then try exact match with any/unspecified inputType and specific button
+    // Try exact match with unspecified inputType and specific button
     for (const gc of commands) {
       if (gc.gesture === gesture && !gc.inputType && gc.button === buttonStr) {
         if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
@@ -739,35 +725,13 @@ class GesturePadViewProvider {
       }
     }
 
-    // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const gc of commands) {
-        if (gc.gesture === gesture && !gc.inputType && gc.button === "left") {
-          if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
-            return gc;
-          }
-        }
-      }
-    }
-
-    // Finally, try matches with unspecified button, defaulting to 'left'
+    // Finally, try matches with unspecified inputType and unspecified button (matches any)
     for (const gc of commands) {
       if (gc.gesture === gesture && !gc.inputType && !gc.button) {
         if (await this._isContextMatchWithCaptured(gc, capturedContext)) {
           return gc;
         }
       }
-    }
-
-    // Try pattern match last (most expensive)
-    if (enablePatternMatching) {
-      return await this._findPatternMatchWithCaptured(
-        gesture,
-        commands,
-        inputType,
-        buttonStr,
-        capturedContext
-      );
     }
 
     return null;
@@ -812,161 +776,6 @@ class GesturePadViewProvider {
       );
       return false;
     }
-  }
-
-  // Pattern matching with captured context
-  async _findPatternMatchWithCaptured(
-    gesture,
-    gestureCommands,
-    inputType,
-    buttonStr,
-    capturedContext
-  ) {
-    const patternCommands = gestureCommands.filter(
-      (gc) => gc.matchType === "pattern"
-    );
-
-    // For wheel input, only match patterns explicitly defined with inputType: "wheel"
-    if (inputType === "wheel") {
-      for (const command of patternCommands) {
-        if (command.inputType === "wheel") {
-          try {
-            const regex = new RegExp(command.gesture);
-            if (
-              regex.test(gesture) &&
-              (await this._isContextMatchWithCaptured(command, capturedContext))
-            ) {
-              return command;
-            }
-          } catch (error) {
-            console.error(`Invalid regex pattern: ${command.gesture}`, error);
-          }
-        }
-      }
-      return null;
-    }
-
-    // Try pattern matches with specific inputType and specific button
-    for (const command of patternCommands) {
-      if (command.inputType === inputType && command.button === buttonStr) {
-        try {
-          const regex = new RegExp(command.gesture);
-          if (
-            regex.test(gesture) &&
-            (await this._isContextMatchWithCaptured(command, capturedContext))
-          ) {
-            return command;
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${command.gesture}`, error);
-        }
-      }
-    }
-
-    // Try with default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (command.inputType === inputType && command.button === "left") {
-          try {
-            const regex = new RegExp(command.gesture);
-            if (
-              regex.test(gesture) &&
-              (await this._isContextMatchWithCaptured(command, capturedContext))
-            ) {
-              return command;
-            }
-          } catch (error) {
-            console.error(`Invalid regex pattern: ${command.gesture}`, error);
-          }
-        }
-      }
-    }
-
-    // Try with any/unspecified inputType and specific button
-    for (const command of patternCommands) {
-      if (!command.inputType && command.button === buttonStr) {
-        try {
-          const regex = new RegExp(command.gesture);
-          if (
-            regex.test(gesture) &&
-            (await this._isContextMatchWithCaptured(command, capturedContext))
-          ) {
-            return command;
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${command.gesture}`, error);
-        }
-      }
-    }
-
-    // Try with any/unspecified inputType and default button 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (!command.inputType && command.button === "left") {
-          try {
-            const regex = new RegExp(command.gesture);
-            if (
-              regex.test(gesture) &&
-              (await this._isContextMatchWithCaptured(command, capturedContext))
-            ) {
-              return command;
-            }
-          } catch (error) {
-            console.error(`Invalid regex pattern: ${command.gesture}`, error);
-          }
-        }
-      }
-    }
-
-    // Finally, try matches with unspecified button
-    for (const command of patternCommands) {
-      if (!command.inputType && !command.button) {
-        try {
-          const regex = new RegExp(command.gesture);
-          if (
-            regex.test(gesture) &&
-            (await this._isContextMatchWithCaptured(command, capturedContext))
-          ) {
-            return command;
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${command.gesture}`, error);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  // Pattern matching with context awareness
-  async _findPatternMatchWithContext(
-    gesture,
-    gestureCommands,
-    inputType,
-    buttonStr,
-    context
-  ) {
-    const patternCommands = gestureCommands.filter(
-      (gc) => gc.matchType === "pattern"
-    );
-
-    for (const command of patternCommands) {
-      if (command.inputType === inputType && command.button === buttonStr) {
-        try {
-          const regex = new RegExp(command.gesture);
-          if (
-            regex.test(gesture) &&
-            (await this._isContextMatchWithCaptured(command, context))
-          ) {
-            return command;
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${command.gesture}`, error);
-        }
-      }
-    }
-
-    return null;
   }
 
   resolveWebviewView(webviewView) {
@@ -1122,13 +931,7 @@ class GesturePadViewProvider {
   }
 
   // Helper method to find gesture matches with optimized matching strategy
-  async _findGestureMatch(
-    gesture,
-    commands,
-    enablePatternMatching,
-    inputType,
-    buttonStr
-  ) {
+  async _findGestureMatch(gesture, commands, inputType, buttonStr) {
     // For wheel input, only match commands explicitly defined with inputType: "wheel"
     if (inputType === "wheel") {
       for (const gc of commands) {
@@ -1138,19 +941,10 @@ class GesturePadViewProvider {
           }
         }
       }
-      // No fallback to 'any' or unspecified inputType for wheel
-      if (enablePatternMatching) {
-        return await this._findPatternMatch(
-          gesture,
-          commands,
-          inputType,
-          buttonStr
-        );
-      }
       return null;
     }
 
-    // Try exact match with specific inputType and button, checking context
+    // Try exact match with specific inputType and specific button
     for (const gc of commands) {
       if (
         gc.gesture === gesture &&
@@ -1163,22 +957,20 @@ class GesturePadViewProvider {
       }
     }
 
-    // Then try exact match with specific inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const gc of commands) {
-        if (
-          gc.gesture === gesture &&
-          gc.inputType === inputType &&
-          gc.button === "left"
-        ) {
-          if (await this._isContextMatch(gc)) {
-            return gc;
-          }
+    // Try exact match with specific inputType and unspecified button (matches any button)
+    for (const gc of commands) {
+      if (
+        gc.gesture === gesture &&
+        gc.inputType === inputType &&
+        !gc.button
+      ) {
+        if (await this._isContextMatch(gc)) {
+          return gc;
         }
       }
     }
 
-    // Then try exact match with any/unspecified inputType and specific button
+    // Try exact match with unspecified inputType and specific button
     for (const gc of commands) {
       if (gc.gesture === gesture && !gc.inputType && gc.button === buttonStr) {
         if (await this._isContextMatch(gc)) {
@@ -1187,18 +979,7 @@ class GesturePadViewProvider {
       }
     }
 
-    // Then try exact match with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const gc of commands) {
-        if (gc.gesture === gesture && !gc.inputType && gc.button === "left") {
-          if (await this._isContextMatch(gc)) {
-            return gc;
-          }
-        }
-      }
-    }
-
-    // Finally, try matches with unspecified button, defaulting to 'left'
+    // Finally, try matches with unspecified inputType and unspecified button (matches any)
     for (const gc of commands) {
       if (gc.gesture === gesture && !gc.inputType && !gc.button) {
         if (await this._isContextMatch(gc)) {
@@ -1207,21 +988,11 @@ class GesturePadViewProvider {
       }
     }
 
-    // Try pattern match last (most expensive)
-    if (enablePatternMatching) {
-      return await this._findPatternMatch(
-        gesture,
-        commands,
-        inputType,
-        buttonStr
-      );
-    }
-
     return null;
   }
 
-  // No longer needed since 'any' is removed and button is mandatory with default 'left'
-  // Conflict checking is simplified by always requiring a specific button or defaulting to 'left'
+  // Button matching: if button is configured, only that button matches.
+  // If button is not configured, any button matches.
 
   // Cached gesture map for faster lookups
   static GESTURE_MAP = {
@@ -1234,9 +1005,6 @@ class GesturePadViewProvider {
     downright: "DR",
     downleft: "DL",
   };
-
-  // Cache for compiled regex patterns
-  _patternCache = new Map();
 
   // Helper method to check if a gesture command matches to current context
   async _isContextMatch(gestureCommand) {
@@ -1263,8 +1031,6 @@ class GesturePadViewProvider {
 
       const gesture = direction; // Use the direction code directly for command lookup
       const gestureCommands = this._getGestureCommands();
-      const config = vscode.workspace.getConfiguration("mouseGestures");
-      const enablePatternMatching = config.get("enablePatternMatching");
 
       // Try to find a match regardless of whether the gesture is in GESTURE_MAP
       const inputType = details.inputType || "mouse"; // Default to mouse if not specified
@@ -1282,7 +1048,6 @@ class GesturePadViewProvider {
       const match = await this._findGestureMatch(
         gesture,
         gestureCommands,
-        enablePatternMatching,
         inputType,
         buttonStr
       );
@@ -1420,169 +1185,6 @@ class GesturePadViewProvider {
       });
       quickPick.show();
     });
-  }
-
-  // Optimized pattern matching with caching
-  async _findPatternMatch(gesture, gestureCommands, inputType, buttonStr) {
-    const patternCommands = gestureCommands.filter(
-      (gc) => gc.matchType === "pattern"
-    );
-
-    // For wheel input, only match patterns explicitly defined with inputType: "wheel"
-    if (inputType === "wheel") {
-      for (const command of patternCommands) {
-        // Ignore button for wheel pattern matching
-        if (command.inputType === "wheel") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && (await this._isContextMatch(command))) {
-            return command;
-          }
-        }
-      }
-      // No fallback to 'any' or unspecified inputType for wheel
-      return null;
-    }
-
-    // Original logic for other input types (like mouse)
-    // First, try pattern matches with specific inputType and specific button
-    for (const command of patternCommands) {
-      if (command.inputType === inputType && command.button === buttonStr) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            // Use the gesture string as a regex directly (allowing complex patterns)
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && (await this._isContextMatch(command))) {
-          return command;
-        }
-      }
-    }
-
-    // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (command.inputType === inputType && command.button === "left") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && (await this._isContextMatch(command))) {
-            return command;
-          }
-        }
-      }
-    }
-
-    // Then, try pattern matches with any/unspecified inputType and specific button
-    for (const command of patternCommands) {
-      if (!command.inputType && command.button === buttonStr) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && (await this._isContextMatch(command))) {
-          return command;
-        }
-      }
-    }
-
-    // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
-    if (buttonStr !== "left") {
-      for (const command of patternCommands) {
-        if (!command.inputType && command.button === "left") {
-          let regex = this._patternCache.get(command.gesture);
-
-          if (!regex) {
-            try {
-              regex = new RegExp(command.gesture);
-              this._patternCache.set(command.gesture, regex);
-            } catch (e) {
-              console.error(
-                `Invalid regex pattern for gesture: ${command.gesture}`,
-                e
-              );
-              continue;
-            }
-          }
-
-          if (regex.test(gesture) && (await this._isContextMatch(command))) {
-            return command;
-          }
-        }
-      }
-    }
-
-    // Finally, try matches with unspecified button, defaulting to 'left'
-    for (const command of patternCommands) {
-      if (!command.inputType && !command.button) {
-        let regex = this._patternCache.get(command.gesture);
-
-        if (!regex) {
-          try {
-            regex = new RegExp(command.gesture);
-            this._patternCache.set(command.gesture, regex);
-          } catch (e) {
-            console.error(
-              `Invalid regex pattern for gesture: ${command.gesture}`,
-              e
-            );
-            continue;
-          }
-        }
-
-        if (regex.test(gesture) && (await this._isContextMatch(command))) {
-          return command;
-        }
-      }
-    }
-    return null;
   }
 
   // Method to generate HTML content

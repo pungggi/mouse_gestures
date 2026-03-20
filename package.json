@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "1.1.14",
+  "version": "1.1.15",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "license": "MIT",
@@ -69,11 +69,6 @@
     "configuration": {
       "title": "Mouse Gestures",
       "properties": {
-        "mouseGestures.enablePatternMatching": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable pattern matching for gestures. When enabled, gestures can be defined as regular expressions for complex patterns (e.g., 'L(RU)+D')."
-        },
         "mouseGestures.pathColor": {
           "type": "string",
           "default": "#cccccc",
@@ -107,16 +102,6 @@
                 {
                   "command": "workbench.action.previousEditor",
                   "description": "Switch to previous editor"
-                }
-              ]
-            },
-            {
-              "gesture": "^LRUDLR$",
-              "matchType": "pattern",
-              "actions": [
-                {
-                  "command": "workbench.action.toggleSidebarVisibility",
-                  "description": "Toggle sidebar for complex gesture LRUDLR"
                 }
               ]
             },
@@ -172,7 +157,7 @@
             "properties": {
               "gesture": {
                 "type": "string",
-                "description": "The gesture string. Supports regular expressions for complex patterns (e.g., 'LRUDLR', '^L(RU)+D$'). For simple gestures, use 'R' (right), 'L' (left), 'U' (up), 'D' (down), or combinations like 'DR' (down-right). For advanced use, define a regex pattern to match complex gesture sequences."
+                "description": "The gesture string. Use 'R' (right), 'L' (left), 'U' (up), 'D' (down), or combinations like 'DR' (down-right), 'LRUD', etc."
               },
               "inputType": {
                 "type": "string",
@@ -200,8 +185,7 @@
                   "middle",
                   "right"
                 ],
-                "default": "left",
-                "description": "Specifies the mouse button this gesture applies to: 'left' (default), 'middle', or 'right'. This field is mandatory."
+                "description": "Specifies the mouse button this gesture applies to: 'left', 'middle', or 'right'. If not set, the gesture matches any mouse button."
               },
               "actions": {
                 "type": "array",
@@ -265,10 +249,10 @@
     }
   },
   "devDependencies": {
-    "@eslint/js": "^9.37.0",
-    "copy-webpack-plugin": "^13.0.1",
-    "globals": "^16.4.0",
-    "webpack": "^5.102.0",
-    "webpack-cli": "^6.0.1"
+    "@eslint/js": "^10.0.1",
+    "copy-webpack-plugin": "^14.0.0",
+    "globals": "^17.4.0",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^7.0.2"
   }
 }

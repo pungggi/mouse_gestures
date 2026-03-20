@@ -1,6 +1,16 @@
 # Change Log
 
-## [1.2.0] - 2024-11-20
+## [1.1.15]
+
+### Changed
+
+- **Button differentiation**: The `button` property now strictly differentiates gestures. If a gesture is configured with a specific button (`"left"`, `"middle"`, or `"right"`), it only matches that button. If `button` is not set, the gesture matches any mouse button. This allows the same gesture to trigger different commands depending on which mouse button is used.
+
+### Removed
+
+- **Complex gesture patterns**: Removed regex-based pattern matching (`matchType: "pattern"`, `enablePatternMatching` setting). Gestures now use exact string matching only.
+
+## [1.1.14]
 
 ### Added
 
@@ -15,7 +25,7 @@
   - Same gesture can trigger different commands in editor vs explorer vs terminal
   - Automatic context condition generation when assigning new gestures
 
-## [1.1.1] - 2024-05-22
+## [1.1.1]
 
 ### Added
 

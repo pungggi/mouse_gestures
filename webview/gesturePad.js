@@ -197,7 +197,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
   else if (button === 1) buttonStr = "middle";
   else if (button === 2) buttonStr = "right";
 
-  let exactSpecificMatch = null;
+  let exactSpecificMatch;
   // Check for exact match with specific inputType and button
   if (inputType === "wheel") {
     buttonStr = undefined;
@@ -308,131 +308,7 @@ function findGestureDescriptions(sequence, inputType, button = null) {
     };
   }
 
-  // Try pattern match if no exact match
-  const patternCommands = gestureCommands.filter(
-    (cmd) => cmd.matchType === "pattern"
-  );
-
-  console.log(
-    `Testing ${sequence} against ${patternCommands.length} pattern commands`
-  );
-
-  // First, try pattern matches with specific inputType and specific button
-  for (const cmd of patternCommands) {
-    if (cmd.inputType === inputType && cmd.button === buttonStr) {
-      try {
-        console.log(`Testing pattern: ${cmd.gesture}`);
-        const regex = new RegExp(cmd.gesture);
-        if (regex.test(sequence)) {
-          console.log(`Match found for pattern: ${cmd.gesture}`);
-          return {
-            gesture: sequence,
-            descriptions: cmd.actions.map((action) => ({
-              command: action.command,
-              description: action.description || "",
-            })),
-          };
-        }
-      } catch (error) {
-        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-      }
-    }
-  }
-
-  // Then, try pattern matches with specific inputType and default button 'left' if buttonStr is not 'left'
-  if (buttonStr !== "left") {
-    for (const cmd of patternCommands) {
-      if (cmd.inputType === inputType && cmd.button === "left") {
-        try {
-          console.log(`Testing pattern: ${cmd.gesture}`);
-          const regex = new RegExp(cmd.gesture);
-          if (regex.test(sequence)) {
-            console.log(`Match found for pattern: ${cmd.gesture}`);
-            return {
-              gesture: sequence,
-              descriptions: cmd.actions.map((action) => ({
-                command: action.command,
-                description: action.description || "",
-              })),
-            };
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-        }
-      }
-    }
-  }
-
-  // Then, try pattern matches with any/unspecified inputType and specific button
-  for (const cmd of patternCommands) {
-    if (!cmd.inputType && cmd.button === buttonStr) {
-      try {
-        console.log(`Testing pattern: ${cmd.gesture}`);
-        const regex = new RegExp(cmd.gesture);
-        if (regex.test(sequence)) {
-          console.log(`Match found for pattern: ${cmd.gesture}`);
-          return {
-            gesture: sequence,
-            descriptions: cmd.actions.map((action) => ({
-              command: action.command,
-              description: action.description || "",
-            })),
-          };
-        }
-      } catch (error) {
-        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-      }
-    }
-  }
-
-  // Then, try pattern matches with any/unspecified inputType and default button 'left' if buttonStr is not 'left'
-  if (buttonStr !== "left") {
-    for (const cmd of patternCommands) {
-      if (!cmd.inputType && cmd.button === "left") {
-        try {
-          console.log(`Testing pattern: ${cmd.gesture}`);
-          const regex = new RegExp(cmd.gesture);
-          if (regex.test(sequence)) {
-            console.log(`Match found for pattern: ${cmd.gesture}`);
-            return {
-              gesture: sequence,
-              descriptions: cmd.actions.map((action) => ({
-                command: action.command,
-                description: action.description || "",
-              })),
-            };
-          }
-        } catch (error) {
-          console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-        }
-      }
-    }
-  }
-
-  // Finally, try matches with unspecified button, defaulting to 'left'
-  for (const cmd of patternCommands) {
-    if (!cmd.inputType && !cmd.button) {
-      try {
-        console.log(`Testing pattern: ${cmd.gesture}`);
-        const regex = new RegExp(cmd.gesture);
-        if (regex.test(sequence)) {
-          console.log(`Match found for pattern: ${cmd.gesture}`);
-          return {
-            gesture: sequence,
-            descriptions: cmd.actions.map((action) => ({
-              command: action.command,
-              description: action.description || "",
-            })),
-          };
-        }
-      } catch (error) {
-        console.error(`Invalid regex pattern: ${cmd.gesture}`, error);
-      }
-    }
-  }
-
   // No match found
-  console.log(`No pattern match found for: ${sequence}`);
   return {
     gesture: sequence,
     descriptions: [],
