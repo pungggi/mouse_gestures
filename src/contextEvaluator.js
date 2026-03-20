@@ -131,14 +131,57 @@ class ContextEvaluator {
       })
     );
 
-    // Initialize debug state from current session
+    // Workspace changes
+    this._disposables.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        this._updateWorkspaceContextKeys();
+      })
+    );
+
+    // Editor group / Tab changes
+    if (vscode.window.tabGroups) {
+      this._disposables.push(
+        vscode.window.tabGroups.onDidChangeTabGroups(() => {
+          this._contextCache.set('multipleEditorGroups', this._getEditorGroupCount() > 1);
+          this._contextCache.set('activeEditorGroupLast', this._isLastEditorGroup());
+        }),
+        vscode.window.tabGroups.onDidChangeTabs(() => {
+          this._contextCache.set('groupEditorsCount', this._getActiveGroupEditorCount());
+          this._contextCache.set('isInDiffEditor', this._isActiveTabDiff());
+        })
+      );
+    }
+
+    // Visible editors change
+    this._disposables.push(
+      vscode.window.onDidChangeVisibleTextEditors((editors) => {
+        this._contextCache.set('editorIsOpen', editors.length > 0);
+      })
+    );
+
+    // Extension changes (affect debuggersAvailable)
+    this._disposables.push(
+      vscode.extensions.onDidChange(() => {
+        this._debuggersAvailableCache = null;
+        this._debuggersAvailableCacheTime = 0;
+        this._contextCache.set('debuggersAvailable', this._hasDebuggerExtensions());
+      })
+    );
+
+    // Initialize states from current session
     const currentSession = vscode.debug.activeDebugSession;
     this._contextCache.set('inDebugMode', !!currentSession);
     this._contextCache.set('debugType', currentSession?.type);
     this._contextCache.set('debugState', currentSession ? 'running' : 'inactive');
 
-    // Initialize window and editor focus states
     this._contextCache.set('windowFocused', vscode.window.state.focused);
+    this._contextCache.set('terminalFocus', !!vscode.window.activeTerminal);
+    this._contextCache.set('terminalIsOpen', vscode.window.terminals.length > 0);
+    this._contextCache.set('terminalCount', vscode.window.terminals.length);
+    this._contextCache.set('editorIsOpen', vscode.window.visibleTextEditors.length > 0);
+    this._contextCache.set('debuggersAvailable', this._hasDebuggerExtensions());
+
+    this._updateWorkspaceContextKeys();
     this._updateEditorContextKeys(vscode.window.activeTextEditor);
   }
 
@@ -173,6 +216,7 @@ class ContextEvaluator {
       this._contextCache.set('editorLineNumber', editor.selection.active.line + 1);
       this._contextCache.set('activeEditorGroupIndex', editor.viewColumn || 1);
       this._contextCache.set('isInDiffEditor', this._isActiveTabDiff());
+      this._contextCache.set('groupEditorsCount', this._getActiveGroupEditorCount());
 
       // editorReadonly: URI-scheme heuristic (document.isReadonly does not exist in the API)
       const writableSchemes = ['file', 'untitled', 'vscode-userdata'];
@@ -186,6 +230,22 @@ class ContextEvaluator {
       this._contextCache.set('editorIsDirty', false);
       this._contextCache.set('activeEditorGroupEmpty', true);
     }
+  }
+
+  /**
+   * Updates workspace-related context keys
+   */
+  _updateWorkspaceContextKeys() {
+    const folders = vscode.workspace.workspaceFolders;
+    this._contextCache.set('workspaceFolderCount', folders ? folders.length : 0);
+
+    let state = 'empty';
+    if (folders && folders.length === 1) {
+      state = 'folder';
+    } else if (folders && folders.length > 1) {
+      state = 'workspace';
+    }
+    this._contextCache.set('workbenchState', state);
   }
 
   /**
@@ -210,16 +270,7 @@ class ContextEvaluator {
       this._contextCache.set('isWeb', vscode.env.uiKind === vscode.UIKind.Web);
 
       // Workspace contexts
-      const workspaceFolders = vscode.workspace.workspaceFolders;
-      this._contextCache.set('workspaceFolderCount', workspaceFolders ? workspaceFolders.length : 0);
-
-      if (workspaceFolders && workspaceFolders.length === 1) {
-        this._contextCache.set('workbenchState', 'folder');
-      } else if (workspaceFolders && workspaceFolders.length > 1) {
-        this._contextCache.set('workbenchState', 'workspace');
-      } else {
-        this._contextCache.set('workbenchState', 'empty');
-      }
+      this._updateWorkspaceContextKeys();
 
       // Editor group contexts (tabGroups API available since VS Code 1.67, engine requires >=1.80)
       const visibleEditors = vscode.window.visibleTextEditors;
