@@ -123,11 +123,23 @@ class ContextEvaluator {
       })
     );
 
+    // Window focus change
+    this._disposables.push(
+      vscode.window.onDidChangeWindowState((state) => {
+        this._contextCache.set('windowFocused', state.focused);
+        this._contextCache.set('editorTextFocus', !!vscode.window.activeTextEditor && state.focused);
+      })
+    );
+
     // Initialize debug state from current session
     const currentSession = vscode.debug.activeDebugSession;
     this._contextCache.set('inDebugMode', !!currentSession);
     this._contextCache.set('debugType', currentSession?.type);
     this._contextCache.set('debugState', currentSession ? 'running' : 'inactive');
+
+    // Initialize window and editor focus states
+    this._contextCache.set('windowFocused', vscode.window.state.focused);
+    this._updateEditorContextKeys(vscode.window.activeTextEditor);
   }
 
   /**
