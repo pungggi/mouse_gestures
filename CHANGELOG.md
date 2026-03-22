@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.1.18]
+
+### Fixed
+
+- **QuickPad multi-command registration**: Registering a new gesture via QuickPad now correctly prompts to add additional commands with sequential or parallel execution mode, matching the behavior of the standard gesture registration flow.
+
 ## [1.1.17]
 
 ### Added
