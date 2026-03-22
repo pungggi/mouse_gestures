@@ -306,6 +306,14 @@ Some examples:
         {
             "keystroke": "Enter",
             "description": "Submit"
+        },
+        {
+            "keystroke": "Ctrl+C",
+            "description": "Copy selected text"
+        },
+        {
+            "keystroke": "Hello World",
+            "description": "Type text"
         }
     ]
   }
@@ -338,8 +346,16 @@ Some examples:
   - If not set, the gesture matches any mouse button. This means the same gesture pattern with different buttons triggers the same command. To differentiate commands by button, set the `button` property explicitly on each entry.
 
 - `actions`: Array of action objects, each containing:
-  - `command`: The VS Code command ID to execute (one of `command` or `keystroke` is required)
-  - `keystroke`: A keystroke to simulate (e.g. **"Enter"**, **"Tab"**, or any text). This uses OS-level automation to send keys *globally* to the active window, which means it works seamlessly inside Webviews, Terminals, standard editors, and even the file explorer.
+  - `command`: The VS Code command ID to execute (exactly one of `command` or `keystroke` is required)
+  - `keystroke`: A keystroke to simulate. This uses OS-level automation to send keys *globally* to the active window, working seamlessly inside Webviews, Terminals, and editors.
+    > **⚠️ Security Warning:** Keystrokes are sent globally to the active window. You must ensure the correct window is focused to avoid unintended actions in other applications.
+
+    **Supported Syntax:** Due to security restrictions against command injection, only the following inputs are allowed:
+    - **Single Characters:** Any single printable character (e.g. `"A"`, `"1"`, `";"`).
+    - **Special Keys:** `"Enter"`, `"Tab"`, `"Escape"`, `"Esc"`, `"Space"`, `"Backspace"`, `"Up"`, `"Down"`, `"Left"`, `"Right"`.
+    - **Modifiers** (e.g. Ctrl, Alt, Shift, Meta) and combinations (e.g. `Ctrl+Shift+P`) are **not supported**. If you need to trigger a VS Code shortcut like `Ctrl+Shift+P`, use the `command` property to call its corresponding VS Code command ID instead (e.g. `"workbench.action.showCommands"`).
+
+    *Note on Underlying APIs*: The extension uses PowerShell `wscript.shell.SendKeys` (Windows), AppleScript `System Events` (macOS), and `xdotool` (Linux).
   - `description`: Optional description of what the action does
   - `waitSeconds`: Number of seconds to wait before executing the next action (only applies in sequential mode)
   - `args`: Optional array of arguments to pass to the command (only applicable when `command` is used)

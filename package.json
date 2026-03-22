@@ -191,7 +191,18 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "required": [],
+                  "anyOf": [
+                    {
+                      "required": [
+                        "command"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "keystroke"
+                      ]
+                    }
+                  ],
                   "properties": {
                     "command": {
                       "type": "string",

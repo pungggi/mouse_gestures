@@ -202,10 +202,10 @@ function renderGestures(gestures) {
 
         if (isParallel) {
           // For parallel commands: → command
-          commandLine.innerHTML = `→ ${commandText}`;
+          commandLine.textContent = `→ ${commandText}`;
         } else {
           // For sequential commands: 1. command, omit numbering for single command
-          commandLine.innerHTML =
+          commandLine.textContent =
             gestureConfig.actions.length === 1
               ? commandText
               : `${index + 1}. ${commandText}`;
