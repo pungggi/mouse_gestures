@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.1.17]
+
+### Added
+
+- **Keystroke Simulation**: Added a new `keystroke` property for actions. You can now simulate raw key presses like **"Enter"**, **"Tab"**, or any text strings directly from a gesture.
+  - **Global Input Simulation**: The `keystroke` feature leverages native OS-level tools (`powershell`, `osascript`, `xdotool`) to simulate key events. This means keystrokes now function **everywhere**, including inside Webviews, the Explorer, Terminals, and Settings UI, independent of editor focus.
+  - **Fallback Display**: The Cheat Sheet now correctly identifies and labels keystroke-only actions.
+  - **Flexibility**: Actions can now use either `command` or `keystroke`, making it easier to automate workflows that require physical key feedback globally.
+
+
 ## [1.1.16]
 
 ### Fixed

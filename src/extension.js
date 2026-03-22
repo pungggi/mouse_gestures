@@ -897,15 +897,92 @@ class GesturePadViewProvider {
   // Method to execute a single command
   async _executeCommand(action) {
     try {
-      const result = await vscode.commands.executeCommand(
-        action.command,
-        ...(action.args || [])
-      );
-      return { success: true, result };
+      if (action.keystroke) {
+        return await this._simulateGlobalKeystroke(action.keystroke);
+      }
+
+      if (action.command) {
+        const result = await vscode.commands.executeCommand(
+          action.command,
+          ...(action.args || [])
+        );
+        return { success: true, result };
+      }
+      
+      return { success: false, error: "No command or keystroke specified" };
     } catch (error) {
-      console.error(`Error executing command ${action.command}:`, error);
+      console.error(`Error executing action:`, error);
       return { success: false, error };
     }
+  }
+
+  async _simulateGlobalKeystroke(keystroke) {
+    const cp = require('child_process');
+    const platform = process.platform;
+    let command = '';
+
+    const key = keystroke.toLowerCase();
+    
+    return new Promise((resolve) => {
+      if (platform === 'win32') {
+        let winKey = keystroke;
+        if (key === 'enter') winKey = '{ENTER}';
+        else if (key === 'tab') winKey = '{TAB}';
+        else if (key === 'escape' || key === 'esc') winKey = '{ESC}';
+        else if (key === 'space') winKey = ' ';
+        else if (key === 'backspace') winKey = '{BACKSPACE}';
+        else if (key === 'up') winKey = '{UP}';
+        else if (key === 'down') winKey = '{DOWN}';
+        else if (key === 'left') winKey = '{LEFT}';
+        else if (key === 'right') winKey = '{RIGHT}';
+        
+        // Escape single quotes carefully for PowerShell
+        winKey = winKey.replace(/'/g, "''");
+        command = `powershell -windowstyle hidden -NoProfile -NonInteractive -Command "$wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys('${winKey}')"`;
+      } else if (platform === 'darwin') {
+        let macKey = `"${keystroke.replace(/"/g, '\\"')}"`;
+        if (key === 'enter') macKey = 'return';
+        else if (key === 'tab') macKey = 'tab';
+        else if (key === 'escape' || key === 'esc') macKey = 'key code 53';
+        else if (key === 'space') macKey = 'space';
+        else if (key === 'backspace') macKey = 'key code 51';
+        else if (key === 'up') macKey = 'key code 126';
+        else if (key === 'down') macKey = 'key code 125';
+        else if (key === 'left') macKey = 'key code 123';
+        else if (key === 'right') macKey = 'key code 124';
+        
+        if (macKey.startsWith('key code')) {
+          command = `osascript -e 'tell application "System Events" to ${macKey}'`;
+        } else {
+          command = `osascript -e 'tell application "System Events" to keystroke ${macKey}'`;
+        }
+      } else if (platform === 'linux') {
+        let linKey = keystroke;
+        if (key === 'enter') linKey = 'Return';
+        else if (key === 'tab') linKey = 'Tab';
+        else if (key === 'escape' || key === 'esc') linKey = 'Escape';
+        else if (key === 'space') linKey = 'space';
+        else if (key === 'backspace') linKey = 'BackSpace';
+        else if (key === 'up') linKey = 'Up';
+        else if (key === 'down') linKey = 'Down';
+        else if (key === 'left') linKey = 'Left';
+        else if (key === 'right') linKey = 'Right';
+        
+        command = `xdotool key ${linKey}`;
+      } else {
+        resolve({ success: false, error: 'Unsupported platform for global keystrokes' });
+        return;
+      }
+
+      cp.exec(command, { windowsHide: true }, (error) => {
+        if (error) {
+          console.error('Failed to simulate keystroke:', error);
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ success: true });
+        }
+      });
+    });
   }
 
   // Optimized command execution strategy

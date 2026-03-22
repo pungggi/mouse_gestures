@@ -298,6 +298,16 @@ Some examples:
             "description": ""
         }
     ]
+  },
+  {
+    // Keystroke simulation
+    "gesture": "D",
+    "actions": [
+        {
+            "keystroke": "Enter",
+            "description": "Submit"
+        }
+    ]
   }
 ]
 ```
@@ -327,11 +337,12 @@ Some examples:
   - `"right"`: Applies only to right mouse button gestures.
   - If not set, the gesture matches any mouse button. This means the same gesture pattern with different buttons triggers the same command. To differentiate commands by button, set the `button` property explicitly on each entry.
 
-- `actions`: Array of command objects, each containing:
-  - `command`: The VS Code command ID to execute (required)
-  - `description`: Optional description of what the command does
-  - `waitSeconds`: Number of seconds to wait before executing the next command (only applies in sequential mode, must be a positive integer)
-  - `args`: Optional array of arguments to pass to the command
+- `actions`: Array of action objects, each containing:
+  - `command`: The VS Code command ID to execute (one of `command` or `keystroke` is required)
+  - `keystroke`: A keystroke to simulate (e.g. **"Enter"**, **"Tab"**, or any text). This uses OS-level automation to send keys *globally* to the active window, which means it works seamlessly inside Webviews, Terminals, standard editors, and even the file explorer.
+  - `description`: Optional description of what the action does
+  - `waitSeconds`: Number of seconds to wait before executing the next action (only applies in sequential mode)
+  - `args`: Optional array of arguments to pass to the command (only applicable when `command` is used)
 - `group`: Optional string. Assigns the gesture to a specific group in the cheat sheet for better organization. Gestures without a group will appear under a default "Ungrouped" category.
 
 ## Troubleshooting

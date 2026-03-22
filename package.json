@@ -2,7 +2,7 @@
   "name": "mouse-gestures",
   "displayName": "Mouse Gestures",
   "description": " An extension to capture mouse gestures and execute commands in Visual Studio Code.",
-  "version": "1.1.16",
+  "version": "1.1.17",
   "icon": "media/icon.png",
   "publisher": "ngSoftware",
   "license": "MIT",
@@ -191,13 +191,15 @@
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "required": [
-                    "command"
-                  ],
+                  "required": [],
                   "properties": {
                     "command": {
                       "type": "string",
                       "description": "The VS Code command ID to execute"
+                    },
+                    "keystroke": {
+                      "type": "string",
+                      "description": "A keystroke to simulate (e.g. 'Enter', 'Tab', or any text). Use this when you want to send a raw key instead of a command."
                     },
                     "description": {
                       "type": "string",

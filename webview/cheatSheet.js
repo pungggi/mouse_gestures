@@ -191,7 +191,11 @@ function renderGestures(gestures) {
       gestureConfig.actions.forEach((action, index) => {
         const commandText = action.description
           ? action.description
-          : action.command.split(".").pop();
+          : action.command
+          ? action.command.split(".").pop()
+          : action.keystroke
+          ? `Key: ${action.keystroke}`
+          : "Unknown Action";
 
         const commandLine = document.createElement("div");
         commandLine.style.marginBottom = "2px";
