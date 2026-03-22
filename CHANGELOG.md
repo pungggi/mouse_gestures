@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.1.19]
+
+### Fixed
+
+- **Keystroke simulation on Windows**: Fixed regression where special keys like `Enter`, `Tab`, `Escape`, arrow keys, etc. would type their literal name (e.g. "ENTER") instead of simulating the actual key press. The issue was caused by PowerShell parsing `{ENTER}` as a script block instead of a string argument.
+
 ## [1.1.18]
 
 ### Fixed

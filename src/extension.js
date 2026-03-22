@@ -980,13 +980,16 @@ class GesturePadViewProvider {
           winKey = `{${winKey}}`;
         }
 
+        // Wrap winKey in single quotes so PowerShell treats it as a string literal,
+        // not a script block (e.g. {ENTER} would be parsed as a ScriptBlock otherwise)
+        const safeKey = "'" + winKey.replace(/'/g, "''") + "'";
         const psArgs = [
           '-windowstyle', 'hidden',
           '-NoProfile',
           '-NonInteractive',
           '-Command',
           '& { param($k) $wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys($k) }',
-          winKey
+          safeKey
         ];
 
         cp.execFile('powershell.exe', psArgs, execOpts, (error) => {
