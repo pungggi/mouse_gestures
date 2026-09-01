@@ -1,5 +1,6 @@
 // Extension entry point
 const vscode = require("vscode");
+const crypto = require("crypto");
 const { ContextEvaluator } = require("./contextEvaluator");
 
 function activate(context) {
@@ -952,12 +953,41 @@ class GesturePadViewProvider {
       return { success: false, error: 'Invalid keystroke type' };
     }
 
+    // Security: keystroke actions are only honored when the effective
+    // gestureCommands configuration comes from user-level settings.
+    // (gestureCommands is application-scoped in package.json, so workspace
+    // values are already ignored by VS Code; this is defense-in-depth in
+    // case the manifest scope is ever relaxed.)
+    if (!this._isKeystrokeConfigUserScoped()) {
+      return {
+        success: false,
+        error:
+          'Keystroke actions are only allowed from user settings, not workspace settings',
+      };
+    }
+
     const key = keystroke.toLowerCase();
     const whitelist = ['enter', 'tab', 'escape', 'esc', 'space', 'backspace', 'up', 'down', 'left', 'right'];
     const isSingleChar = keystroke.length === 1 && /^[\x20-\x7E]$/.test(keystroke);
     
     if (!whitelist.includes(key) && !isSingleChar) {
       return { success: false, error: 'Invalid keystroke: only single printable characters or supported token names are allowed' };
+    }
+
+    // Security: global keystrokes are delivered to whichever window holds OS
+    // focus — including after waitSeconds delays, by which time the user may
+    // have switched to another application. Refuse to send unless the VS Code
+    // window is focused; poll briefly to tolerate focus restoration races
+    // (e.g. right after the QuickPad panel is disposed).
+    const windowFocused = await this._waitForWindowFocus(300);
+    if (!windowFocused) {
+      vscode.window.showWarningMessage(
+        'Mouse Gestures: keystroke was not sent because VS Code is not the focused window.'
+      );
+      return {
+        success: false,
+        error: 'Keystroke cancelled: VS Code window is not focused',
+      };
     }
 
     return new Promise((resolve) => {
@@ -992,7 +1022,18 @@ class GesturePadViewProvider {
           safeKey
         ];
 
-        cp.execFile('powershell.exe', psArgs, execOpts, (error) => {
+        // Resolve PowerShell from the system directory to avoid PATH hijacking
+        const systemRoot =
+          process.env.SystemRoot || process.env.windir || 'C:\\Windows';
+        const powershellPath = require('path').join(
+          systemRoot,
+          'System32',
+          'WindowsPowerShell',
+          'v1.0',
+          'powershell.exe'
+        );
+
+        cp.execFile(powershellPath, psArgs, execOpts, (error) => {
           if (error) {
             console.error('Failed to simulate keystroke:', error);
             resolve({ success: false, error: error.message });
@@ -1067,6 +1108,46 @@ class GesturePadViewProvider {
         resolve({ success: false, error: 'Unsupported platform for global keystrokes' });
       }
     });
+  }
+
+  // Security helper: keystroke actions must originate from user-level
+  // settings so that a cloned (and trusted) repository cannot configure
+  // global keystroke injection via .vscode/settings.json.
+  _isKeystrokeConfigUserScoped() {
+    try {
+      const inspect = vscode.workspace
+        .getConfiguration('mouseGestures')
+        .inspect('gestureCommands');
+      if (
+        inspect &&
+        (inspect.workspaceValue !== undefined ||
+          inspect.workspaceFolderValue !== undefined)
+      ) {
+        console.warn(
+          'Mouse Gestures: workspace-supplied gestureCommands detected; keystroke actions are disabled for security.'
+        );
+        return false;
+      }
+      return true;
+    } catch (error) {
+      // Fail open: the application scope in package.json remains the
+      // primary control; inspect() failing is not a security event.
+      console.warn('Mouse Gestures: could not inspect settings scope', error);
+      return true;
+    }
+  }
+
+  // Security helper: wait (briefly) for the VS Code window to regain OS
+  // focus before synthesizing a global keystroke.
+  async _waitForWindowFocus(timeoutMs = 300) {
+    const start = Date.now();
+    while (!vscode.window.state.focused) {
+      if (Date.now() - start >= timeoutMs) {
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return true;
   }
 
   // Optimized command execution strategy
@@ -1399,15 +1480,11 @@ class GesturePadViewProvider {
   }
 }
 
-// Helper function to generate nonce (keep outside of class or make static)
+// Helper function to generate a cryptographically secure nonce for the
+// webview Content-Security-Policy. Math.random() is predictable and must
+// not be used for CSP nonces.
 function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
+  return crypto.randomBytes(32).toString("hex");
 }
 
 function deactivate() {}

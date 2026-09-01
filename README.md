@@ -300,7 +300,7 @@ Some examples:
     ]
   },
   {
-    // Keystroke simulation
+    // Keystroke simulation (single characters or special keys only)
     "gesture": "D",
     "actions": [
         {
@@ -308,12 +308,8 @@ Some examples:
             "description": "Submit"
         },
         {
-            "keystroke": "Ctrl+C",
-            "description": "Copy selected text"
-        },
-        {
-            "keystroke": "Hello World",
-            "description": "Type text"
+            "keystroke": "y",
+            "description": "Answer a prompt"
         }
     ]
   }
