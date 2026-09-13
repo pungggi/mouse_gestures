@@ -17,6 +17,9 @@ dist/
 .env
 .env.local
 
+# Local agent state
+.pi/
+
 
 # OS-specific files
 .DS_Store

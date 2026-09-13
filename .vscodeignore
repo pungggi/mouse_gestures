@@ -10,6 +10,7 @@ src/**
 webpack.*.js
 *.vsix
 .github/**
+.pi/**
 docs/**
 media/**/*.psd
 media/**/*.ai
