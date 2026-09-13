@@ -1,5 +1,11 @@
 # Change Log
 
+## [Unreleased]
+
+### Security
+
+- **Keystroke focus guard hardened (TOCTOU)**: the VS Code window focus check now also runs *inside* the OS keystroke helper (PowerShell / `osascript` / `xdotool`) immediately before the key event is sent, so a focus change during helper startup can no longer redirect the keystroke to another application. The helper verifies the foreground window actually belongs to this VS Code build (executable path on Windows, `/proc/<pid>/exe` on Linux, application bundle identifier on macOS) and sends nothing on mismatch. On Linux the `which xdotool` pre-check was removed (it widened the check-to-send gap); a missing `xdotool` is now reported by the helper itself.
+
 ## [1.1.19]
 
 ### Fixed

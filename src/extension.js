@@ -976,9 +976,13 @@ class GesturePadViewProvider {
 
     // Security: global keystrokes are delivered to whichever window holds OS
     // focus — including after waitSeconds delays, by which time the user may
-    // have switched to another application. Refuse to send unless the VS Code
-    // window is focused; poll briefly to tolerate focus restoration races
-    // (e.g. right after the QuickPad panel is disposed).
+    // have switched to another application. This pre-spawn check is only a
+    // fast-fail (and tolerates focus restoration races, e.g. right after the
+    // QuickPad panel is disposed). The authoritative re-check runs inside the
+    // spawned helper, immediately before the key event: helper startup
+    // (PowerShell / osascript / xdotool) can take hundreds of milliseconds,
+    // during which OS focus may change (time-of-check vs time-of-use), so a
+    // check done only here would leave a delayed-focus race open.
     const windowFocused = await this._waitForWindowFocus(300);
     if (!windowFocused) {
       vscode.window.showWarningMessage(
@@ -1013,13 +1017,36 @@ class GesturePadViewProvider {
         // Wrap winKey in single quotes so PowerShell treats it as a string literal,
         // not a script block (e.g. {ENTER} would be parsed as a ScriptBlock otherwise)
         const safeKey = "'" + winKey.replace(/'/g, "''") + "'";
+
+        // Security: re-verify OS focus inside the helper, immediately before
+        // SendKeys, so a focus change during PowerShell startup cannot
+        // redirect the keystroke to another application. The foreground
+        // window's owning process must run this VS Code executable
+        // (process.execPath); on any mismatch the helper exits with code 2
+        // and no key is sent.
+        const psQuote = (value) => "'" + value.replace(/'/g, "''") + "'";
+        const psScript = [
+          '$ErrorActionPreference = "Stop"',
+          "Add-Type -Namespace MouseGesturesNative -Name Win32 -MemberDefinition '[DllImport(\"user32.dll\")] public static extern System.IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(System.IntPtr hWnd, out uint lpdwProcessId);'",
+          '$hwnd = [MouseGesturesNative.Win32]::GetForegroundWindow()',
+          'if ($hwnd -eq [System.IntPtr]::Zero) { exit 2 }',
+          '[uint32]$fgPid = 0',
+          '[void][MouseGesturesNative.Win32]::GetWindowThreadProcessId($hwnd, [ref]$fgPid)',
+          'if ($fgPid -eq 0) { exit 2 }',
+          '$fgPath = $null',
+          'try { $fgPath = (Get-Process -Id $fgPid).Path } catch { }',
+          'if (-not $fgPath -or ($fgPath -ine $expected)) { exit 2 }',
+          '$wshell = New-Object -ComObject wscript.shell',
+          '$wshell.SendKeys($k)',
+        ].join('\n');
         const psArgs = [
           '-windowstyle', 'hidden',
           '-NoProfile',
           '-NonInteractive',
           '-Command',
-          '& { param($k) $wshell = New-Object -ComObject wscript.shell; $wshell.SendKeys($k) }',
-          safeKey
+          '& { param($k, $expected)\n' + psScript + '\n}',
+          safeKey,
+          psQuote(process.execPath),
         ];
 
         // Resolve PowerShell from the system directory to avoid PATH hijacking
@@ -1034,6 +1061,12 @@ class GesturePadViewProvider {
         );
 
         cp.execFile(powershellPath, psArgs, execOpts, (error) => {
+          if (error && error.code === 2) {
+            // In-helper focus re-check failed: VS Code is no longer the
+            // foreground window; nothing was sent.
+            resolve(this._keystrokeFocusLost());
+            return;
+          }
           if (error) {
             console.error('Failed to simulate keystroke:', error);
             resolve({ success: false, error: error.message });
@@ -1042,6 +1075,20 @@ class GesturePadViewProvider {
           }
         });
       } else if (platform === 'darwin') {
+        // Security: the frontmost application is re-verified inside the
+        // helper (see focusGuard below) immediately before the key event,
+        // so a focus change during osascript startup cannot redirect the
+        // keystroke to another application. Fail closed when the identity
+        // of this VS Code build cannot be determined.
+        const bundleId = this._getMacAppBundleId();
+        if (!bundleId) {
+          resolve({
+            success: false,
+            error: 'Keystroke cancelled: could not determine the VS Code application identity',
+          });
+          return;
+        }
+
         let macKey = keystroke;
         let isKeyCode = false;
         
@@ -1055,21 +1102,46 @@ class GesturePadViewProvider {
         else if (key === 'left') { macKey = '123'; isKeyCode = true; }
         else if (key === 'right') { macKey = '124'; isKeyCode = true; }
         
-        let osaArgs;
+        // Security focus guard: sends nothing (prints FOCUS_LOST) unless the
+        // frontmost application is this VS Code build.
+        const focusGuard = [
+          'on run argv',
+          'set expectedBundle to item 1 of argv',
+          'tell application "System Events"',
+          'set frontOK to false',
+          'try',
+          'set frontProc to first application process whose frontmost is true',
+          'if bundle identifier of frontProc is expectedBundle then set frontOK to true',
+          'end try',
+          'if not frontOK then return "FOCUS_LOST"',
+          'end tell',
+        ];
+        let sendLine;
+        let usesArgvKey = false;
         if (isKeyCode) {
-          osaArgs = ['-e', `tell application "System Events" to key code ${macKey}`];
+          sendLine = `tell application "System Events" to key code ${macKey}`;
         } else if (['return', 'tab', 'space'].includes(macKey)) {
-          osaArgs = ['-e', `tell application "System Events" to keystroke ${macKey}`];
+          sendLine = `tell application "System Events" to keystroke ${macKey}`;
         } else {
-          osaArgs = [
-            '-e', 'on run argv',
-            '-e', 'tell application "System Events" to keystroke (item 1 of argv)',
-            '-e', 'end run',
-            macKey
-          ];
+          sendLine = 'tell application "System Events" to keystroke (item 2 of argv)';
+          usesArgvKey = true;
+        }
+        const osaArgs = [];
+        for (const line of [...focusGuard, sendLine, 'end run']) {
+          osaArgs.push('-e', line);
+        }
+        osaArgs.push(bundleId);
+        if (usesArgvKey) {
+          osaArgs.push(macKey);
         }
 
-        cp.execFile('osascript', osaArgs, execOpts, (error) => {
+        cp.execFile('osascript', osaArgs, execOpts, (error, stdout) => {
+          if (!error && String(stdout || '').trim() === 'FOCUS_LOST') {
+            // In-helper focus re-check failed: VS Code is no longer the
+            // frontmost application; nothing was sent.
+            resolve(this._keystrokeFocusLost());
+            return;
+          }
           if (error) {
             console.error('Failed to simulate keystroke:', error);
             resolve({ success: false, error: error.message });
@@ -1078,32 +1150,64 @@ class GesturePadViewProvider {
           }
         });
       } else if (platform === 'linux') {
-        cp.execFile('which', ['xdotool'], execOpts, (whichErr) => {
-          if (whichErr) {
-            resolve({ success: false, error: 'xdotool is required but not found on Linux' });
-            return;
-          }
+        let linKey = keystroke;
+        if (key === 'enter') linKey = 'Return';
+        else if (key === 'tab') linKey = 'Tab';
+        else if (key === 'escape' || key === 'esc') linKey = 'Escape';
+        else if (key === 'space') linKey = 'space';
+        else if (key === 'backspace') linKey = 'BackSpace';
+        else if (key === 'up') linKey = 'Up';
+        else if (key === 'down') linKey = 'Down';
+        else if (key === 'left') linKey = 'Left';
+        else if (key === 'right') linKey = 'Right';
 
-          let linKey = keystroke;
-          if (key === 'enter') linKey = 'Return';
-          else if (key === 'tab') linKey = 'Tab';
-          else if (key === 'escape' || key === 'esc') linKey = 'Escape';
-          else if (key === 'space') linKey = 'space';
-          else if (key === 'backspace') linKey = 'BackSpace';
-          else if (key === 'up') linKey = 'Up';
-          else if (key === 'down') linKey = 'Down';
-          else if (key === 'left') linKey = 'Left';
-          else if (key === 'right') linKey = 'Right';
-          
-          cp.execFile('xdotool', ['key', linKey], execOpts, (error) => {
+        // Security: re-verify OS focus inside a single shell script,
+        // immediately before the key event, so a focus change during helper
+        // startup cannot redirect the keystroke to another application.
+        // The focused window's owning process must run this VS Code
+        // executable (all Electron child processes share the same binary,
+        // compared via the /proc/<pid>/exe resolved paths). The former
+        // `which xdotool` pre-check is gone: it widened the check-to-send
+        // gap; a missing xdotool now surfaces as exit code 127 from the
+        // script itself.
+        let expectedExe;
+        try {
+          expectedExe = require('fs').readlinkSync('/proc/self/exe');
+        } catch {
+          expectedExe = process.execPath;
+        }
+        const shScript = [
+          'command -v xdotool >/dev/null 2>&1 || exit 127',
+          'fg_pid="$(xdotool getactivewindow getwindowpid 2>/dev/null)" || exit 1',
+          '[ -n "$fg_pid" ] || exit 1',
+          'fg_exe="$(readlink "/proc/$fg_pid/exe" 2>/dev/null)" || exit 2',
+          '[ "$fg_exe" = "$1" ] || exit 2',
+          'exec xdotool key "$2"',
+        ].join('\n');
+
+        cp.execFile(
+          '/bin/sh',
+          ['-c', shScript, 'mouse-gestures-keystroke', expectedExe, linKey],
+          execOpts,
+          (error) => {
+            if (error && (error.code === 1 || error.code === 2)) {
+              // In-helper focus re-check failed: VS Code is no longer the
+              // focused window; nothing was sent.
+              resolve(this._keystrokeFocusLost());
+              return;
+            }
+            if (error && error.code === 127) {
+              resolve({ success: false, error: 'xdotool is required but not found on Linux' });
+              return;
+            }
             if (error) {
               console.error('Failed to simulate keystroke:', error);
               resolve({ success: false, error: error.message });
             } else {
               resolve({ success: true });
             }
-          });
-        });
+          }
+        );
       } else {
         resolve({ success: false, error: 'Unsupported platform for global keystrokes' });
       }
@@ -1148,6 +1252,62 @@ class GesturePadViewProvider {
       await new Promise((resolve) => setTimeout(resolve, 25));
     }
     return true;
+  }
+
+  // Security helper: shared "focus lost" outcome for keystroke delivery,
+  // used when the in-helper focus re-check (run immediately before the
+  // OS-level key event) fails on any platform.
+  _keystrokeFocusLost() {
+    vscode.window.showWarningMessage(
+      'Mouse Gestures: keystroke was not sent because VS Code is not the focused window.'
+    );
+    return {
+      success: false,
+      error: 'Keystroke cancelled: VS Code window is not focused',
+    };
+  }
+
+  // Security helper (macOS): bundle identifier of the .app bundle running
+  // this extension host (e.g. com.microsoft.VSCode). The keystroke helper
+  // re-verifies the frontmost application against it right before sending
+  // the key event. Cached; null when undeterminable (callers fail closed).
+  _getMacAppBundleId() {
+    if (this._macAppBundleIdCache !== undefined) {
+      return this._macAppBundleIdCache;
+    }
+    let bundleId = null;
+    try {
+      const path = require('path');
+      let dir = path.dirname(process.execPath);
+      const root = path.parse(dir).root;
+      while (dir !== root && path.basename(dir).toLowerCase() !== '.app') {
+        dir = path.dirname(dir);
+      }
+      if (path.basename(dir).toLowerCase() === '.app') {
+        const plist = path.join(dir, 'Contents', 'Info.plist');
+        const out = require('child_process')
+          .execFileSync(
+            'plutil',
+            ['-extract', 'CFBundleIdentifier', 'raw', '-o', '-', plist],
+            {
+              timeout: 2000,
+              encoding: 'utf8',
+              stdio: ['ignore', 'pipe', 'ignore'],
+            }
+          )
+          .trim();
+        if (out) {
+          bundleId = out;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        'Mouse Gestures: could not determine app bundle identifier',
+        error
+      );
+    }
+    this._macAppBundleIdCache = bundleId;
+    return bundleId;
   }
 
   // Optimized command execution strategy
